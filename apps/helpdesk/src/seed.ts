@@ -1,0 +1,289 @@
+import type { Employee, KbArticle, Ticket } from '@nexo/shared';
+import type { HelpdeskRepository } from './repository.ts';
+
+/**
+ * Dados de exemplo (Anexo B). As datas são relativas ao momento do seed para
+ * que os cenários (vencido, resolvido há 4 dias…) existam sempre que o
+ * avaliador rodar o projeto.
+ */
+
+const DAY = 24 * 60 * 60_000;
+const HOUR = 60 * 60_000;
+
+export const EMPLOYEES: Employee[] = [
+  {
+    email: 'ana.souza@nexo.com.br',
+    name: 'Ana Souza',
+    department: 'Financeiro',
+    role: 'employee',
+    supportLevel: null,
+    device: { kind: 'Notebook', model: 'Dell Latitude 5440', os: 'Windows 11' },
+  },
+  {
+    email: 'carla.mendes@nexo.com.br',
+    name: 'Carla Mendes',
+    department: 'Comercial',
+    role: 'employee',
+    supportLevel: null,
+    device: { kind: 'Notebook', model: 'Lenovo ThinkPad E14', os: 'Windows 10' },
+  },
+  {
+    email: 'bruno.tavares@nexo.com.br',
+    name: 'Bruno Tavares',
+    department: 'Marketing',
+    role: 'employee',
+    supportLevel: null,
+    device: { kind: 'Notebook', model: 'MacBook Air M2', os: 'macOS 15' },
+  },
+  {
+    email: 'diego.ramos@nexo.com.br',
+    name: 'Diego Ramos',
+    department: 'Engenharia',
+    role: 'employee',
+    supportLevel: null,
+    device: { kind: 'Desktop', model: 'Dell OptiPlex 7010', os: 'Windows 10' },
+  },
+  {
+    email: 'elisa.prado@nexo.com.br',
+    name: 'Elisa Prado',
+    department: 'Pessoas',
+    role: 'employee',
+    supportLevel: null,
+    device: { kind: 'Notebook', model: 'Dell Latitude 5440', os: 'Windows 11' },
+  },
+  {
+    email: 'rafael.lima@nexo.com.br',
+    name: 'Rafael Lima',
+    department: 'Service desk de TI',
+    role: 'analyst',
+    supportLevel: 'N2',
+    device: null,
+  },
+  {
+    email: 'julia.costa@nexo.com.br',
+    name: 'Júlia Costa',
+    department: 'Service desk de TI',
+    role: 'analyst',
+    supportLevel: 'N1',
+    device: null,
+  },
+];
+
+export const ARTICLES: KbArticle[] = [
+  {
+    id: 'KB-001',
+    title: 'VPN com erro 809',
+    category: 'Rede e VPN',
+    tags: ['vpn', 'erro 809', '809', 'não conecta'],
+    body: 'Reinstale o cliente de VPN pelo portal de softwares e reinicie o computador. Vale apenas para Windows 10; no Windows 11, abra um chamado.',
+  },
+  {
+    id: 'KB-002',
+    title: 'Horário do service desk',
+    category: 'Outros',
+    tags: ['horário', 'atendimento', 'plantão', 'service desk'],
+    body: 'De segunda a sexta, das 8h às 18h. Chamados críticos têm plantão 24 horas. Telefone: ramal 4000.',
+  },
+  {
+    id: 'KB-003',
+    title: 'Trocar ou redefinir a senha da rede',
+    category: 'Acesso',
+    tags: ['senha', 'senha da rede', 'esqueci a senha', 'expirada', 'trocar senha'],
+    body: 'Acesse senha.nexo.com.br, informe seu e-mail corporativo e confirme o código enviado ao celular cadastrado. A nova senha precisa ter 12 caracteres e vale para e-mail, VPN e Wi-Fi. Se o celular cadastrado mudou, abra um chamado de Acesso.',
+  },
+  {
+    id: 'KB-004',
+    title: 'Senha do SAP bloqueada',
+    category: 'Acesso',
+    tags: ['sap', 'bloqueada', 'bloqueio', 'senha do sap'],
+    body: 'Após 3 tentativas erradas o SAP bloqueia o usuário por 30 minutos. Para desbloquear na hora, use "Desbloquear usuário" no portal de autoatendimento (portal.nexo.com.br/sap). Se o bloqueio voltar no mesmo dia, abra um chamado de Acesso.',
+  },
+  {
+    id: 'KB-005',
+    title: 'Configurar o e-mail corporativo no celular',
+    category: 'E-mail',
+    tags: ['outlook', 'celular', 'e-mail', 'sincronizar', 'intune'],
+    body: 'Instale o Outlook e o Intune Portal da Empresa, entre com o e-mail corporativo e aceite a política de segurança. Se o e-mail não sincronizar, remova a conta, reinicie o celular e adicione de novo.',
+  },
+  {
+    id: 'KB-006',
+    title: 'Wi-Fi para visitantes',
+    category: 'Rede e VPN',
+    tags: ['wi-fi', 'wifi', 'visitante', 'nexo-guest', 'senha do wifi'],
+    body: 'Visitantes usam a rede Nexo-Guest. A senha fica na recepção e é trocada toda segunda-feira. Funcionários usam a rede Nexo-Corp com a senha da rede.',
+  },
+  {
+    id: 'KB-007',
+    title: 'Computador lento',
+    category: 'Hardware',
+    tags: ['lento', 'lentidão', 'travando', 'desempenho'],
+    body: 'Reinicie o computador e rode o diagnóstico "Saúde do PC" no portal de softwares. Ele limpa arquivos temporários e verifica atualizações pendentes. Se continuar lento depois do diagnóstico, abra um chamado de Hardware.',
+  },
+  {
+    id: 'KB-008',
+    title: 'Instalar um software',
+    category: 'Software',
+    tags: ['instalar', 'software', 'programa', 'licença', 'portal de softwares'],
+    body: 'Softwares pré-aprovados (Office, Teams, Zoom, Adobe Reader, 7-Zip) são instalados sozinhos pelo portal de softwares. Para softwares pagos ou fora da lista, abra uma requisição; ela precisa da aprovação do seu gestor.',
+  },
+  {
+    id: 'KB-009',
+    title: 'Adicionar uma impressora',
+    category: 'Hardware',
+    tags: ['impressora', 'imprimir', 'impressão'],
+    body: 'No Windows, abra Configurações > Impressoras e adicione \\\\print.nexo.local\\<andar>. No Mac, use o pacote "Impressoras Nexo" do portal de softwares.',
+  },
+  {
+    id: 'KB-010',
+    title: 'Pedir equipamento (monitor, mouse, headset)',
+    category: 'Hardware',
+    tags: ['monitor', 'mouse', 'teclado', 'headset', 'equipamento', 'home office'],
+    body: 'Equipamentos são pedidos por requisição com aprovação do gestor. Depois de aprovados, a entrega leva até 5 dias úteis.',
+  },
+];
+
+function ticket(partial: Omit<Ticket, 'events' | 'resolvedAt' | 'queue' | 'subcategory'> & Partial<Ticket>): Ticket {
+  return {
+    queue: 'N1',
+    subcategory: null,
+    resolvedAt: null,
+    events: [{ at: partial.createdAt, kind: 'created', author: 'Formulário', text: 'Chamado aberto' }],
+    ...partial,
+  };
+}
+
+export function buildTickets(now: Date): Ticket[] {
+  const ago = (ms: number) => new Date(now.getTime() - ms).toISOString();
+  return [
+    // ---- Ana Souza (persona do protótipo) ----
+    ticket({
+      id: 'INC-20311',
+      type: 'INC',
+      title: 'Notebook lento após atualização do Windows',
+      description: 'Lentidão geral desde a última atualização do Windows. Reiniciar e rodar o diagnóstico da central não resolveu.',
+      category: 'Hardware',
+      subcategory: 'Notebook',
+      priority: 'medium',
+      status: 'waiting_analyst',
+      requesterEmail: 'ana.souza@nexo.com.br',
+      affected: 'me',
+      createdAt: ago(7 * DAY),
+      updatedAt: ago(6 * DAY),
+    }),
+    ticket({
+      id: 'INC-20298',
+      type: 'INC',
+      title: 'Acesso à pasta Financeiro no SharePoint',
+      description: 'Perdi o acesso à pasta Financeiro/Fechamento no SharePoint depois da troca de equipe.',
+      category: 'Acesso',
+      priority: 'medium',
+      status: 'in_progress',
+      requesterEmail: 'ana.souza@nexo.com.br',
+      affected: 'me',
+      createdAt: ago(9 * DAY),
+      updatedAt: ago(20 * HOUR),
+    }),
+    ticket({
+      id: 'REQ-10442',
+      type: 'REQ',
+      title: 'Segundo monitor para home office',
+      description: 'Preciso de um segundo monitor para trabalhar de casa.',
+      category: 'Hardware',
+      subcategory: 'Periféricos',
+      priority: 'low',
+      status: 'approved',
+      requesterEmail: 'ana.souza@nexo.com.br',
+      affected: 'me',
+      createdAt: ago(14 * DAY),
+      updatedAt: ago(7 * DAY),
+    }),
+    ticket({
+      id: 'INC-20150',
+      type: 'INC',
+      title: 'Senha do SAP bloqueada',
+      description: 'O SAP bloqueou meu usuário depois de tentar entrar com a senha antiga.',
+      category: 'Acesso',
+      priority: 'medium',
+      status: 'resolved',
+      requesterEmail: 'ana.souza@nexo.com.br',
+      affected: 'me',
+      createdAt: ago(6 * DAY),
+      updatedAt: ago(4 * DAY),
+      resolvedAt: ago(4 * DAY),
+    }),
+    ticket({
+      id: 'INC-19877',
+      type: 'INC',
+      title: 'Outlook não sincroniza no celular',
+      description: 'O Outlook do celular parou de receber e-mails.',
+      category: 'E-mail',
+      priority: 'medium',
+      status: 'resolved',
+      requesterEmail: 'ana.souza@nexo.com.br',
+      affected: 'me',
+      createdAt: ago(62 * DAY),
+      updatedAt: ago(60 * DAY),
+      resolvedAt: ago(60 * DAY),
+    }),
+    // ---- Outros funcionários (para provar o isolamento entre eles) ----
+    ticket({
+      id: 'REQ-10450',
+      type: 'REQ',
+      title: 'Acesso ao SAP — perfil de vendas',
+      description: 'Preciso de acesso ao módulo de vendas do SAP para lançar pedidos de um cliente novo ainda hoje.',
+      category: 'Acesso',
+      priority: 'high',
+      status: 'open',
+      requesterEmail: 'carla.mendes@nexo.com.br',
+      affected: 'me',
+      createdAt: ago(2 * HOUR),
+      updatedAt: ago(2 * HOUR),
+    }),
+    ticket({
+      id: 'INC-20305',
+      type: 'INC',
+      title: 'Impressora do 3º andar não imprime',
+      description: 'A impressora do 3º andar fica com os trabalhos parados na fila.',
+      category: 'Hardware',
+      subcategory: 'Impressora',
+      priority: 'medium',
+      status: 'in_progress',
+      requesterEmail: 'bruno.tavares@nexo.com.br',
+      affected: 'team',
+      createdAt: ago(3 * DAY),
+      updatedAt: ago(1 * DAY),
+    }),
+    ticket({
+      id: 'INC-20290',
+      type: 'INC',
+      title: 'VPN cai a cada 30 minutos',
+      description: 'A VPN desconecta sozinha a cada meia hora e preciso reconectar.',
+      category: 'Rede e VPN',
+      priority: 'high',
+      status: 'waiting_analyst',
+      requesterEmail: 'diego.ramos@nexo.com.br',
+      affected: 'me',
+      createdAt: ago(3 * DAY),
+      updatedAt: ago(2 * DAY),
+    }),
+    ticket({
+      id: 'REQ-10430',
+      type: 'REQ',
+      title: 'Licença do Adobe Acrobat Pro',
+      description: 'Preciso editar PDFs de contratos.',
+      category: 'Software',
+      priority: 'low',
+      status: 'open',
+      requesterEmail: 'elisa.prado@nexo.com.br',
+      affected: 'me',
+      createdAt: ago(1 * DAY),
+      updatedAt: ago(1 * DAY),
+    }),
+  ];
+}
+
+export function seed(repo: HelpdeskRepository, now: Date = new Date()): void {
+  for (const e of EMPLOYEES) repo.upsertEmployee(e);
+  for (const a of ARTICLES) repo.upsertArticle(a);
+  for (const t of buildTickets(now)) repo.saveTicket(t);
+}
