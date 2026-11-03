@@ -19,7 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "npm run eval -w @nexo/api",
-    "seed:reset": "node -e \"require('fs').rmSync('data',{recursive:true,force:true})\" && echo dados apagados; o seed roda no próximo start"
+    "seed:reset": "node -e \"require('fs').rmSync('data',{recursive:true,force:true});console.log('data/ apagado')\""
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
