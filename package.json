@@ -1,0 +1,31 @@
+{
+  "name": "nexo-assist",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Nexo Assist — agent de atendimento para o service desk de TI",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n helpdesk,api,web -c yellow,cyan,magenta \"npm:dev -w @nexo/helpdesk\" \"npm:dev -w @nexo/api\" \"npm:dev -w @nexo/web\"",
+    "build": "npm run build -w @nexo/web",
+    "start": "concurrently -k -n helpdesk,api \"npm:start -w @nexo/helpdesk\" \"npm:start -w @nexo/api\"",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "eval": "npm run eval -w @nexo/api",
+    "seed:reset": "node -e \"require('fs').rmSync('data',{recursive:true,force:true})\" && echo dados apagados; o seed roda no próximo start"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "concurrently": "^9.2.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
