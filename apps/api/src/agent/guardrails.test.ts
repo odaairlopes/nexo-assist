@@ -128,6 +128,12 @@ describe('finalizeTurn (travas determinísticas)', () => {
     expect(out.reply).toBe('Ok.');
   });
 
+  it('mostra o rascunho montado mesmo se o modelo falhar na resposta final', () => {
+    const out = finalizeTurn(base({ decision: null, error: '429', draftsCreatedThisTurn: new Set(['d1']) }));
+    expect(out.ui).toEqual([{ kind: 'draft', draft }]);
+    expect(out.action).toBe('drafted_ticket');
+  });
+
   it('numera as opções quando há pergunta destacada', () => {
     const out = finalizeTurn(
       base({

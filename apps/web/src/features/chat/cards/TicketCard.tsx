@@ -1,7 +1,9 @@
 import {
   formatLocalDateTime,
   formatLocalDay,
+  formatLocalTime,
   formatRelative,
+  isSameLocalDay,
   PRIORITY_LABEL,
   PRIORITY_TONE,
   STATUS_LABEL,
@@ -46,7 +48,12 @@ export function TicketCard({ ticket }: { ticket: TicketView }) {
             <span className={ticket.sla.overdue ? s.overdue : undefined}>{formatRelative(ticket.updatedAt)}</span>
             {ticket.sla.overdue && <span className={s.muted}>· prazo vencido</span>}
             {!ticket.sla.overdue && ticket.sla.dueAt && (
-              <span className={s.muted}>· prazo {formatLocalDay(new Date(ticket.sla.dueAt))}</span>
+              <span className={s.muted}>
+                · prazo{' '}
+                {isSameLocalDay(new Date(ticket.sla.dueAt), new Date())
+                  ? `até ${formatLocalTime(new Date(ticket.sla.dueAt))}`
+                  : formatLocalDay(new Date(ticket.sla.dueAt))}
+              </span>
             )}
           </Field>
         </div>

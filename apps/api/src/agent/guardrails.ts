@@ -74,6 +74,21 @@ export function finalizeTurn(input: FinalizeInput): FinalizedTurn {
         transfer: input.pendingTransfer,
       };
     }
+    // Falhou DEPOIS de montar um rascunho: mostra o rascunho para conferência.
+    const created = [...input.draftsCreatedThisTurn].map((id) => input.getDraft(id)).find((d) => d?.status === 'pending');
+    if (created) {
+      return {
+        reply: 'Montei um rascunho com o que você me contou. Confira e confirme, ou edite se algo estiver errado.',
+        ui: [{ kind: 'draft', draft: created }],
+        intent: created.kind === 'create' ? 'new_ticket' : 'ticket_update',
+        action: created.kind === 'create' ? 'drafted_ticket' : 'drafted_update',
+        confidence: 0.5,
+        understood: 'Rascunho montado pela ferramenta; o modelo falhou antes de concluir a resposta.',
+        reasoning: `O rascunho ${created.code} foi montado (prioridade pela regra: ${created.priorityRule}); a resposta final falhou: ${input.error ?? 'erro desconhecido'}.`,
+        guardrails: [`Rascunho ${created.code} exibido mesmo com falha do modelo na resposta final; nada é criado sem confirmação.`],
+        transfer: null,
+      };
+    }
     return {
       reply: 'Desculpe, tive um problema para processar sua mensagem agora. Pode tentar de novo? Se preferir, chamo um analista.',
       ui: [{ kind: 'options', question: null, options: [{ label: 'Falar com um analista', value: 'Quero falar com um analista' }], numbered: false }],

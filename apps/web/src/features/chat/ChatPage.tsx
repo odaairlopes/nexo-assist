@@ -210,7 +210,7 @@ export function ChatPage() {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder={composerDisabled ? 'Inicie uma nova conversa para continuar' : 'Escreva para o Nexo…'}
+              placeholder={!conversation ? 'Carregando…' : composerDisabled ? 'Inicie uma nova conversa para continuar' : 'Escreva para o Nexo…'}
               disabled={composerDisabled}
               maxLength={2000}
               autoFocus
