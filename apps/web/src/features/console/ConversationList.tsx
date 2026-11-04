@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { CheckCheck, Search } from 'lucide-react';
 import { formatLocalTime, isSameLocalDay, type ConversationView, type SessionUser } from '@nexo/shared';
-import { Avatar, Dot, Pill } from '../../components/ui.tsx';
+import { Avatar, Dot, NexoMark, Pill } from '../../components/ui.tsx';
 import type { TypingInfo } from '../../hooks/useTyping.ts';
 import { latestPerEmployee, matchesFilter, type Filter } from './filters.ts';
 import s from './Console.module.css';
@@ -65,6 +65,7 @@ export function ConversationList({
   me,
   typing,
   onSelect,
+  account = null,
 }: {
   conversations: ConversationView[];
   selectedId: string | null;
@@ -72,6 +73,8 @@ export function ConversationList({
   /** Quem está digitando, por conversa. */
   typing: Record<string, TypingInfo>;
   onSelect: (id: string) => void;
+  /** Conta do analista (sair/avatar): no celular a barra lateral some e isso vem para cá. */
+  account?: ReactNode;
 }) {
   const [filter, setFilter] = useState<Filter>('needs_you');
   const [query, setQuery] = useState('');
@@ -115,8 +118,14 @@ export function ConversationList({
     <section className={s.list} aria-label="Conversas">
       <header className={s.listHeader}>
         <div className={s.titleRow}>
+          {account && (
+            <span className={s.listMark}>
+              <NexoMark size={22} />
+            </span>
+          )}
           <h1>Conversas</h1>
           <Pill tone="success">Disponível</Pill>
+          {account}
         </div>
         <label className={s.search}>
           <Search size={15} aria-hidden="true" />

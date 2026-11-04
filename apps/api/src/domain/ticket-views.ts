@@ -23,6 +23,6 @@ export function toView(t: Ticket, now: Date = new Date()): TicketView {
     ...toSummary(t, now),
     description: t.description,
     affected: t.affected,
-    lastEvent: last ? { at: last.at, text: last.text } : null,
+    lastEvent: last ? { at: last.at, kind: last.kind, text: last.text } : null,
   };
 }

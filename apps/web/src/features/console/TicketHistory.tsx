@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronRight, History, X } from 'lucide-react';
+import { ArrowLeftRight, ChevronRight, History, UserCheck, X } from 'lucide-react';
 import {
   ACTIVE_STATUSES,
   formatLocalDay,
@@ -15,8 +15,43 @@ import { consoleApi } from '../../api/endpoints.ts';
 import { Dot, ErrorBanner, Spinner } from '../../components/ui.tsx';
 import s from './Console.module.css';
 
+/** Última movimentação do chamado, em uma linha (o texto completo fica no histórico do legado). */
+function EventLine({ event }: { event: NonNullable<TicketView['lastEvent']> }) {
+  if (event.kind === 'transfer') {
+    return (
+      <>
+        <ArrowLeftRight size={15} aria-hidden="true" />
+        <span>Transferido para um analista</span>
+      </>
+    );
+  }
+  if (event.kind === 'assign') {
+    return (
+      <>
+        <UserCheck size={15} aria-hidden="true" />
+        <span>{event.text}</span>
+      </>
+    );
+  }
+  return (
+    <>
+      <History size={15} aria-hidden="true" />
+      <span title={event.text}>{event.text}</span>
+    </>
+  );
+}
+
 /** Painel "Chamados da Ana": o chamado da conversa em destaque + os demais. */
-export function TicketHistory({ conversation, onClose }: { conversation: ConversationView; onClose: () => void }) {
+export function TicketHistory({
+  conversation,
+  onClose,
+  drawer = false,
+}: {
+  conversation: ConversationView;
+  onClose: () => void;
+  /** Em telas menores o painel abre por cima da conversa (gaveta lateral ou folha inferior). */
+  drawer?: boolean;
+}) {
   const [tickets, setTickets] = useState<TicketView[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -41,7 +76,15 @@ export function TicketHistory({ conversation, onClose }: { conversation: Convers
   const open = tickets?.filter((t) => ACTIVE_STATUSES.includes(t.status)).length ?? 0;
 
   return (
-    <aside className={s.history} aria-label={`Chamados de ${conversation.employee.name}`}>
+    <>
+      {drawer && <div className={s.historyBackdrop} onClick={onClose} aria-hidden="true" />}
+      <aside
+        className={s.history}
+        data-drawer={drawer}
+        aria-label={`Chamados de ${conversation.employee.name}`}
+        {...(drawer ? { role: 'dialog', 'aria-modal': true } : {})}
+      >
+      {drawer && <span className={s.grabber} aria-hidden="true" />}
       <header className={s.historyHeader}>
         <div>
           <strong>Chamados {first ? `de ${first}` : ''}</strong>
@@ -79,8 +122,7 @@ export function TicketHistory({ conversation, onClose }: { conversation: Convers
               <p className={s.currentDesc}>{current.description}</p>
               {current.lastEvent && (
                 <div className={s.lastEvent}>
-                  <History size={15} aria-hidden="true" />
-                  <span>{current.lastEvent.text}</span>
+                  <EventLine event={current.lastEvent} />
                   <time>{formatLocalTime(new Date(current.lastEvent.at))}</time>
                 </div>
               )}
@@ -116,6 +158,7 @@ export function TicketHistory({ conversation, onClose }: { conversation: Convers
           </section>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

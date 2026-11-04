@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
-import { CheckCheck, CircleStop, Hand, Info, PauseCircle, SendHorizontal, Undo2 } from 'lucide-react';
+import { CheckCheck, ChevronLeft, CircleStop, Hand, Info, PanelRightClose, PanelRightOpen, PauseCircle, SendHorizontal, Undo2 } from 'lucide-react';
 import { formatLocalTime, isSameLocalDay, type ChatMessage, type ConversationView, type SessionUser, type TransferKind } from '@nexo/shared';
 import { ApiError } from '../../api/client.ts';
 import { consoleApi } from '../../api/endpoints.ts';
@@ -86,6 +86,9 @@ export function ConversationPane({
   me,
   onChanged,
   typingName = null,
+  onBack = null,
+  historyOpen,
+  onToggleHistory,
 }: {
   conversation: ConversationView;
   messages: ChatMessage[];
@@ -94,6 +97,10 @@ export function ConversationPane({
   typingName?: string | null;
   me: SessionUser;
   onChanged: (c: ConversationView) => void;
+  /** Celular: volta para a lista de conversas. */
+  onBack?: (() => void) | null;
+  historyOpen: boolean;
+  onToggleHistory: () => void;
 }) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -146,7 +153,12 @@ export function ConversationPane({
   return (
     <section className={s.pane} aria-label={`Conversa com ${conversation.employee.name}`}>
       <header className={s.paneHeader}>
-        <Avatar name={conversation.employee.name} size={40} />
+        {onBack && (
+          <button type="button" className={s.backButton} onClick={onBack} aria-label="Voltar para as conversas">
+            <ChevronLeft size={22} />
+          </button>
+        )}
+        <Avatar name={conversation.employee.name} size={40} online={conversation.employeeOnline} />
         <div className={s.who}>
           <strong>{conversation.employee.name}</strong>
           <span>
@@ -156,28 +168,62 @@ export function ConversationPane({
           </span>
         </div>
         {conversation.status === 'waiting_human' && (
-          <Pill tone="warning" icon={<PauseCircle size={14} />}>
-            Aguardando atendente
-          </Pill>
+          <span className={s.headerPill}>
+            <Pill tone="warning" icon={<PauseCircle size={14} />}>
+              Aguardando atendente
+            </Pill>
+          </span>
         )}
-        {conversation.status === 'agent' && <Pill tone="success">Agent atendendo</Pill>}
-        {conversation.status === 'closed' && <Pill tone="primary">Encerrada</Pill>}
-        {conversation.status === 'human' && !mine && <Pill tone="primary">Com {conversation.assignedAnalyst?.name}</Pill>}
+        {conversation.status === 'agent' && (
+          <span className={s.headerPill}>
+            <Pill tone="success">Agent atendendo</Pill>
+          </span>
+        )}
+        {conversation.status === 'closed' && (
+          <span className={s.headerPill}>
+            <Pill tone="primary">Encerrada</Pill>
+          </span>
+        )}
+        {conversation.status === 'human' && !mine && (
+          <span className={s.headerPill}>
+            <Pill tone="primary">Com {conversation.assignedAnalyst?.name}</Pill>
+          </span>
+        )}
         {mine && (
           <>
-            <Button icon={<Undo2 size={14} />} loading={busy === 'return'} onClick={() => act('return', () => consoleApi.giveBack(conversation.id))}>
-              Devolver ao agent
+            <Button
+              icon={<Undo2 size={14} />}
+              loading={busy === 'return'}
+              onClick={() => act('return', () => consoleApi.giveBack(conversation.id))}
+              aria-label="Devolver ao agent"
+              title="Devolver ao agent"
+              className={s.headerAction}
+            >
+              <span className="hide-sm">Devolver ao agent</span>
             </Button>
             <Button
               variant="danger"
               icon={<CircleStop size={14} />}
               loading={busy === 'close'}
               onClick={() => act('close', () => consoleApi.close(conversation.id))}
+              aria-label="Encerrar atendimento"
+              title="Encerrar atendimento"
+              className={s.headerAction}
             >
-              Encerrar atendimento
+              <span className="hide-sm">Encerrar atendimento</span>
             </Button>
           </>
         )}
+        <button
+          type="button"
+          className={s.iconButton}
+          onClick={onToggleHistory}
+          aria-pressed={historyOpen}
+          aria-label={historyOpen ? 'Esconder chamados do funcionário' : 'Mostrar chamados do funcionário'}
+          title={`Chamados de ${first}`}
+        >
+          {historyOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+        </button>
       </header>
 
       <div className={s.paneMessages} ref={scrollRef}>
@@ -274,7 +320,7 @@ export function ConversationPane({
               }}
               placeholder={`Responder ${first}…`}
               maxLength={2000}
-              autoFocus
+              autoFocus={window.matchMedia('(pointer: fine)').matches}
             />
             <button type="submit" className={s.sendRound} disabled={!text.trim() || busy === 'send'} aria-label="Enviar">
               {busy === 'send' ? <Spinner size={14} /> : <SendHorizontal size={18} />}

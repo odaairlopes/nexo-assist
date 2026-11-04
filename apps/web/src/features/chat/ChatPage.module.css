@@ -327,3 +327,90 @@
   font-size: 12.5px;
   color: var(--ink-3);
 }
+
+/* ---------- Celular ---------- */
+@media (max-width: 640px) {
+  .messagesInner {
+    gap: 16px;
+    padding: 18px 14px 4px;
+  }
+  .empty h2 {
+    font-size: 27px;
+    line-height: 1.15;
+  }
+  .empty p {
+    font-size: 15px;
+  }
+  /* Sugestões viram uma faixa que rola de lado, como chips de app. */
+  .suggestions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 6px -14px 0;
+    padding: 2px 14px 6px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .suggestions::-webkit-scrollbar {
+    display: none;
+  }
+  .suggestions button {
+    flex-shrink: 0;
+    min-height: 40px;
+    border-radius: 999px;
+    padding: 8px 14px;
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+  .userBubble {
+    max-width: 86%;
+    font-size: 15px;
+  }
+  .agentBubble {
+    padding: 11px 14px;
+    font-size: 15px;
+  }
+
+  .composerArea {
+    position: relative;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line-soft);
+    background: #ffffffeb;
+    backdrop-filter: saturate(1.6) blur(12px);
+  }
+  .notice {
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+  .composer {
+    align-items: flex-end;
+    min-height: 46px;
+    padding: 4px 4px 4px 14px;
+    border-radius: 23px;
+  }
+  .composer textarea {
+    padding: 9px 0;
+    max-height: 120px;
+  }
+  /* Enviar vira um botão redondo só com o ícone. */
+  .send {
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 999px;
+  }
+  .send svg {
+    width: 17px;
+    height: 17px;
+  }
+  .meta {
+    justify-content: center;
+    min-height: 0;
+    font-size: 11.5px;
+  }
+  .newChat {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+}

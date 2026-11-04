@@ -97,11 +97,48 @@
   color: var(--ink-3);
 }
 
+/* Celular: rótulo em cima, valor embaixo — leitura de lista de app. */
 @media (max-width: 700px) {
   .page {
-    padding: 24px 16px;
+    padding: 20px 14px calc(24px + env(safe-area-inset-bottom));
+  }
+  .content {
+    gap: 22px;
+  }
+  .heading h1 {
+    font-size: 26px;
+  }
+  .card {
+    border-radius: var(--radius-lg);
   }
   .row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 14px 16px;
+  }
+  .label {
+    width: auto;
+    font-size: 12.5px;
+  }
+  .value {
+    font-size: 15px;
+    overflow-wrap: anywhere;
+  }
+  .passwordRow {
     flex-wrap: wrap;
+    gap: 12px 14px;
+    padding: 16px;
+  }
+  .passwordText {
+    flex: 1 1 calc(100% - 56px);
+  }
+  .passwordRow > button {
+    flex: 1 1 100%;
+    justify-content: center;
+    height: 44px;
+  }
+  .helper {
+    padding: 12px 16px;
   }
 }

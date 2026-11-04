@@ -412,11 +412,69 @@
   color: var(--ink-3);
 }
 
+/* ---------- Celular e tablet: a vitrine vira um cabeçalho escuro e o
+   formulário sobe por cima dele, como uma folha. ---------- */
 @media (max-width: 960px) {
+  .page {
+    flex-direction: column;
+    background: var(--ink);
+  }
   .showcase {
+    width: 100%;
+    max-width: none;
+    gap: 28px;
+    padding: calc(22px + env(safe-area-inset-top)) 24px 52px;
+    background:
+      radial-gradient(120% 90% at 100% 0%, #0285f73d 0%, transparent 60%),
+      var(--ink);
+  }
+  .story {
+    gap: 0;
+  }
+  .headline {
+    gap: 12px;
+  }
+  .headline h1 {
+    font-size: clamp(32px, 8.4vw, 44px);
+    letter-spacing: -0.8px;
+  }
+  .previewWrap,
+  .lead,
+  .stats {
     display: none;
   }
+
   .signIn {
-    padding: 24px 16px;
+    flex: 1;
+    margin-top: -24px;
+    gap: 28px;
+    padding: 28px 24px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 24px 24px 0 0;
+    background: var(--paper);
+    box-shadow: 0 -12px 40px #00000033;
+  }
+  .help {
+    order: 2;
+    text-align: center;
+  }
+  .form {
+    gap: 24px;
+    max-width: 440px;
+  }
+  .input,
+  .submit {
+    height: 50px;
+    border-radius: 12px;
+  }
+  .demo button {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .footer {
+    order: 3;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
   }
 }

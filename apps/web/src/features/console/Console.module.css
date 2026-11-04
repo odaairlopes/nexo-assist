@@ -685,6 +685,10 @@
 }
 .lastEvent span {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .lastEvent time {
   font-size: 12.5px;
@@ -741,34 +745,227 @@
   font-size: 13px;
   color: var(--ink-2);
 }
-.reopenHistory {
-  position: fixed;
-  top: 78px;
-  right: 14px;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: var(--paper);
-  color: var(--ink-2);
+/* ---------- Responsivo ---------- */
+.backButton,
+.listMark,
+.grabber,
+.historyBackdrop {
+  display: none;
+}
+.headerPill {
+  display: contents;
 }
 
-@media (max-width: 1280px) {
-  .history {
-    display: none;
-  }
-  .reopenHistory {
-    display: none;
+.backButton {
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  margin-right: -4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+}
+.backButton:active {
+  background: var(--desk);
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
   }
 }
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* Até 1280 px: o painel de chamados sai da coluna e vira gaveta por cima da conversa. */
+@media (max-width: 1280px) {
+  .history[data-drawer='true'] {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 40;
+    width: min(380px, 92vw);
+    border-left: 0;
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+    box-shadow: 0 0 0 1px var(--line-soft), 0 24px 60px #1b243129;
+    animation: drawer-in var(--dur-slow) var(--ease-out) both;
+  }
+  .historyBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: #1b243140;
+    backdrop-filter: blur(2px);
+    animation: backdrop-in var(--dur-slow) var(--ease-out) both;
+  }
+}
+
 @media (max-width: 900px) {
   .list {
     width: 300px;
   }
   .paneMessages {
     padding: 16px;
+  }
+}
+
+/* Até 760 px (celular): lista e conversa viram duas telas, como num app de mensagens. */
+@media (max-width: 760px) {
+  .console {
+    overflow: hidden;
+  }
+  .rail {
+    display: none;
+  }
+  /* O rodapé já explica o bloqueio; no celular a faixa extra só ocupa espaço. */
+  .takeoverRow + .lockedInput {
+    display: none;
+  }
+  .console[data-view='list'] .pane,
+  .console[data-view='list'] .emptyPane {
+    display: none;
+  }
+  .console[data-view='chat'] .list {
+    display: none;
+  }
+  .console[data-view='chat'] .pane {
+    animation: global(slide-in-right) var(--dur-slow) var(--ease-out) both;
+  }
+
+  /* Lista */
+  .list {
+    width: 100%;
+    border-right: 0;
+  }
+  .listHeader {
+    gap: 12px;
+    padding: calc(14px + env(safe-area-inset-top)) 16px 10px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .listMark {
+    display: inline-flex;
+  }
+  .titleRow {
+    gap: 10px;
+  }
+  .titleRow h1 {
+    font-size: 24px;
+    letter-spacing: -0.4px;
+  }
+  .search {
+    height: 42px;
+  }
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -16px;
+    padding: 0 16px 2px;
+    scrollbar-width: none;
+  }
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+  .filter {
+    flex-shrink: 0;
+    min-height: 34px;
+    padding: 6px 12px;
+    font-size: 13.5px;
+  }
+  .items {
+    padding: 6px 6px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  /* Conversa */
+  .paneHeader {
+    gap: 10px;
+    height: auto;
+    min-height: 60px;
+    padding: env(safe-area-inset-top) 8px 0 4px;
+  }
+  .backButton {
+    display: inline-grid;
+  }
+  .headerPill {
+    display: none;
+  }
+  .headerAction {
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  .who span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .paneMessages {
+    padding: 12px 12px 14px;
+  }
+  .bubble {
+    max-width: 84%;
+    font-size: 15px;
+  }
+
+  .takeover {
+    gap: 10px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 24px #1b24310d;
+  }
+  .summary p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .takeoverRow {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+  }
+  .takeoverText {
+    flex: 1 1 calc(100% - 48px);
+  }
+  .takeoverRow > button {
+    flex: 1 1 0;
+    justify-content: center;
+    height: 44px;
+  }
+  .lockedInput {
+    font-size: 14px;
+  }
+
+  /* Chamados: folha que sobe de baixo, com alça. */
+  .history[data-drawer='true'] {
+    inset: auto 0 0 0;
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: 20px 20px 0 0;
+    animation-name: sheet-up;
+  }
+  .grabber {
+    display: block;
+    width: 38px;
+    height: 4px;
+    margin: 8px auto 0;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: #1b243126;
+  }
+  .history[data-drawer='true'] .historyHeader {
+    height: 56px;
+  }
+  .history[data-drawer='true'] .historyBody {
+    gap: 24px;
+    padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
   }
 }
 

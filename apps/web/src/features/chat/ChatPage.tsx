@@ -155,8 +155,8 @@ export function ChatPage() {
           <StatusPill conversation={conversation} stream={stream} />
           {/* Recomeçar a qualquer momento, exceto com um analista atendendo. */}
           {conversation?.status === 'agent' && messages.length > 0 && (
-            <Button variant="ghost" icon={<RotateCcw size={14} />} onClick={() => void startNew()}>
-              Nova conversa
+            <Button variant="ghost" icon={<RotateCcw size={14} />} onClick={() => void startNew()} aria-label="Nova conversa" className={s.newChat}>
+              <span className="hide-sm">Nova conversa</span>
             </Button>
           )}
         </>
@@ -246,11 +246,12 @@ export function ChatPage() {
               placeholder={!conversation ? 'Carregando…' : composerDisabled ? 'Inicie uma nova conversa para continuar' : 'Escreva para o Nexo…'}
               disabled={composerDisabled}
               maxLength={2000}
-              autoFocus
+              // No celular, focar sozinho abriria o teclado e cobriria a conversa.
+              autoFocus={window.matchMedia('(pointer: fine)').matches}
             />
-            <button type="submit" className={s.send} disabled={composerDisabled || sending || !draft.trim()}>
+            <button type="submit" className={s.send} disabled={composerDisabled || sending || !draft.trim()} aria-label="Enviar">
               {sending ? <Spinner size={14} /> : <SendHorizontal size={14} aria-hidden="true" />}
-              Enviar
+              <span className="hide-sm">Enviar</span>
             </button>
           </form>
           <div className={s.meta}>

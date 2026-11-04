@@ -132,11 +132,125 @@
   flex-direction: column;
 }
 
+.menuButton,
+.closeMenu,
+.mobileMark,
+.backdrop {
+  display: none;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* ---------- Celular e tablet em pé: barra lateral vira gaveta ---------- */
 @media (max-width: 860px) {
   .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    width: min(300px, 86vw);
+    padding: calc(18px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+    background: var(--paper);
+    box-shadow: 0 0 0 1px var(--line-soft), 0 24px 60px #1b243129;
+    transform: translateX(-104%);
+    visibility: hidden;
+    transition:
+      transform var(--dur-slow) var(--ease-out),
+      visibility 0s linear var(--dur-slow);
+  }
+  .sidebar[data-open='true'] {
+    transform: none;
+    visibility: visible;
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+  .navItem {
+    height: 44px;
+    font-size: 15px;
+  }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 29;
+    background: #1b243147;
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-slow) var(--ease-out);
+  }
+  .backdrop[data-open='true'] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .closeMenu {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin-left: auto;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink-3);
+  }
+  .closeMenu:hover {
+    background: var(--desk);
+  }
+
+  .topBar {
+    gap: 8px;
+    height: auto;
+    min-height: 56px;
+    padding: env(safe-area-inset-top) 12px 0 6px;
+    background: #ffffffe6;
+    backdrop-filter: saturate(1.6) blur(12px);
+  }
+  .menuButton {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink);
+    transition: background var(--dur-fast) var(--ease-out);
+  }
+  .menuButton:active {
+    background: var(--desk);
+  }
+  .crumbRoot {
     display: none;
   }
-  .topBar {
-    padding: 0 16px;
+  .mobileMark {
+    display: inline-flex;
+  }
+  .breadcrumb {
+    min-width: 0;
+    gap: 8px;
+  }
+  .breadcrumb strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 16px;
+    letter-spacing: -0.2px;
+  }
+  .status {
+    flex-shrink: 1;
+    justify-content: flex-end;
+  }
+  .status > * {
+    min-width: 0;
   }
 }
+

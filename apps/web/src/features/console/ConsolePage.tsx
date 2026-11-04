@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LogOut, MessageCircle, PanelRightOpen } from 'lucide-react';
+import { LogOut, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { ConversationView, ServerEvent } from '@nexo/shared';
 import { ApiError } from '../../api/client.ts';
@@ -7,6 +7,7 @@ import { consoleApi } from '../../api/endpoints.ts';
 import { Avatar, ErrorBanner, NexoMark, Spinner } from '../../components/ui.tsx';
 import { useConversationState } from '../../hooks/useConversationState.ts';
 import { useEventStream } from '../../hooks/useEventStream.ts';
+import { COMPACT_QUERY, PHONE_QUERY, useMediaQuery } from '../../hooks/useMediaQuery.ts';
 import { useTypingState } from '../../hooks/useTyping.ts';
 import { useSession } from '../../session/SessionProvider.tsx';
 import { ConversationList } from './ConversationList.tsx';
@@ -28,7 +29,15 @@ export function ConsolePage() {
   const [conversations, setConversations] = useState<ConversationView[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(true);
+  // Painel de chamados: fixo ao lado em telas largas; em telas menores, gaveta que abre sob demanda.
+  const compact = useMediaQuery(COMPACT_QUERY);
+  const phone = useMediaQuery(PHONE_QUERY);
+  const [historyPinned, setHistoryPinned] = useState(true);
+  const [historyDrawer, setHistoryDrawer] = useState(false);
+  const showHistory = compact ? historyDrawer : historyPinned;
+  const setShowHistory = compact ? setHistoryDrawer : setHistoryPinned;
+  // No celular, lista e conversa são telas separadas: abrir uma conversa troca de tela.
+  const [paneOpen, setPaneOpen] = useState(false);
   const { state, load, apply } = useConversationState();
 
   const loadList = useCallback(async () => {
@@ -98,10 +107,31 @@ export function ConsolePage() {
   const listed = conversations?.find((c) => c.id === selectedId);
   const selected = current && listed ? { ...current, employeeOnline: listed.employeeOnline } : current;
 
+  const select = useCallback((id: string) => {
+    setSelectedId(id);
+    setPaneOpen(true);
+    setHistoryDrawer(false);
+  }, []);
+
+  // Esc fecha a gaveta de chamados.
+  useEffect(() => {
+    if (!compact || !historyDrawer) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setHistoryDrawer(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [compact, historyDrawer]);
+
   if (!user) return null;
 
+  const signOut = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
-    <div className={s.console}>
+    <div className={s.console} data-view={paneOpen && selected ? 'chat' : 'list'}>
       <nav className={s.rail} aria-label="Console">
         <div className={s.railLogo}>
           <NexoMark size={22} />
@@ -116,10 +146,7 @@ export function ConsolePage() {
           className={s.railItem}
           aria-label="Sair"
           title="Sair"
-          onClick={async () => {
-            await logout();
-            navigate('/login', { replace: true });
-          }}
+          onClick={() => void signOut()}
         >
           <LogOut size={17} />
         </button>
@@ -141,7 +168,25 @@ export function ConsolePage() {
 
       {conversations && (
         <>
-          <ConversationList conversations={conversations} selectedId={selectedId} me={user} typing={typing} onSelect={setSelectedId} />
+          <ConversationList
+            conversations={conversations}
+            selectedId={selectedId}
+            me={user}
+            typing={typing}
+            onSelect={select}
+            account={
+              phone ? (
+                <>
+                  <button type="button" className={s.iconButton} onClick={() => void signOut()} aria-label="Sair">
+                    <LogOut size={18} />
+                  </button>
+                  <span title={`${user.name} · Suporte ${user.supportLevel ?? ''}`}>
+                    <Avatar name={user.name} size={34} tone="self" online />
+                  </span>
+                </>
+              ) : null
+            }
+          />
           {selected ? (
             <ConversationPane
               conversation={selected}
@@ -150,16 +195,14 @@ export function ConsolePage() {
               typingName={selectedId && typing[selectedId]?.role === 'user' ? typing[selectedId]!.name : null}
               me={user}
               onChanged={(c) => apply({ type: 'conversation', conversation: c })}
+              onBack={phone ? () => setPaneOpen(false) : null}
+              historyOpen={showHistory}
+              onToggleHistory={() => setShowHistory((v) => !v)}
             />
           ) : (
             <div className={s.emptyPane}>{selectedId ? <Spinner size={18} /> : 'Selecione uma conversa'}</div>
           )}
-          {selected && showHistory && <TicketHistory conversation={selected} onClose={() => setShowHistory(false)} />}
-          {selected && !showHistory && (
-            <button type="button" className={s.reopenHistory} onClick={() => setShowHistory(true)} aria-label="Mostrar chamados do funcionário">
-              <PanelRightOpen size={18} />
-            </button>
-          )}
+          {selected && showHistory && <TicketHistory conversation={selected} drawer={compact} onClose={() => setShowHistory(false)} />}
         </>
       )}
     </div>

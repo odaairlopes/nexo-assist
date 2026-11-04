@@ -355,3 +355,84 @@
   font-family: inherit;
   font-size: 12px;
 }
+
+/* ---------- Celular ---------- */
+@media (max-width: 640px) {
+  .card {
+    border-radius: var(--radius-lg);
+  }
+  .body {
+    padding: 14px 14px 12px;
+  }
+  .eyebrow {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .title {
+    font-size: 16.5px;
+  }
+  .fields {
+    padding: 0 14px 14px;
+  }
+  .grid {
+    gap: 12px 18px;
+  }
+  /* Campos em duas colunas: leitura rápida sem rolar de lado. */
+  .grid > .field {
+    flex: 1 1 calc(50% - 18px);
+  }
+  .fieldValue {
+    font-size: 14px;
+    white-space: normal;
+  }
+  .actions {
+    flex-wrap: wrap;
+    padding: 10px;
+  }
+  .confirm {
+    flex: 1 0 100%;
+    justify-content: center;
+    height: 44px;
+    order: -1;
+  }
+  .actions > :not(.confirm) {
+    flex: 1;
+    justify-content: center;
+    min-height: 40px;
+  }
+  .kbd {
+    display: none;
+  }
+  /* Seletor: código e status em cima, título inteiro embaixo. */
+  .selectorRow {
+    display: grid;
+    grid-template-columns: 16px 1fr auto;
+    column-gap: 12px;
+    row-gap: 3px;
+    height: auto;
+    min-height: 60px;
+    padding: 10px 14px;
+  }
+  .radio {
+    grid-row: 1 / span 2;
+  }
+  .selectorTitle {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    white-space: normal;
+  }
+  .selectorDate {
+    display: none;
+  }
+  .option {
+    min-height: 40px;
+    padding: 8px 14px;
+  }
+  .options {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .options .option {
+    justify-content: flex-start;
+  }
+}

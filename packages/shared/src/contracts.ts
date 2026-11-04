@@ -5,6 +5,7 @@ import type {
   Impact,
   MessageRole,
   Priority,
+  TicketEvent,
   TicketStatus,
   TicketType,
 } from './domain.ts';
@@ -95,7 +96,7 @@ export interface TicketSummary {
 export interface TicketView extends TicketSummary {
   description: string;
   affected: Impact;
-  lastEvent: { at: string; text: string } | null;
+  lastEvent: { at: string; kind: TicketEvent['kind']; text: string } | null;
 }
 
 export type DraftKind = 'create' | 'update' | 'reopen';

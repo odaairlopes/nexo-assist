@@ -66,9 +66,17 @@ body,
 #root {
   height: 100%;
 }
+/* No celular, 100dvh acompanha a barra do navegador e o teclado virtual. */
+@supports (height: 100dvh) {
+  #root {
+    height: 100dvh;
+  }
+}
 
 body {
   margin: 0;
+  -webkit-tap-highlight-color: transparent;
+  text-size-adjust: 100%;
   font-family: var(--font-ui);
   font-size: 14.5px;
   line-height: 1.45;
@@ -96,6 +104,19 @@ button:disabled {
 :focus-visible {
   outline: 2px solid var(--cta);
   outline-offset: 2px;
+}
+
+/* Esconde só no celular (o texto continua no rótulo acessível do botão). */
+@media (max-width: 640px) {
+  .hide-sm {
+    display: none !important;
+  }
+  /* iOS dá zoom em campos com fonte < 16 px; no celular os campos usam 16 px. */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 .sr-only {
