@@ -31,6 +31,22 @@
   --font-display: 'Newsreader', Georgia, serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
 
+  /* Sombras do protótipo (efeitos "shadow" do arquivo .pen). */
+  --shadow-xs: 0 1px 2px #1b24310d;
+  --shadow-input: 0 1px 2px #1b24310a;
+  --shadow-bubble: 0 1px 2px #1b243112;
+  --shadow-rail: 0 1px 2px #1b24311a;
+  --shadow-card: 0 1px 2px #1b24310d, 0 6px 18px #1b24310a;
+  --shadow-card-hover: 0 1px 2px #1b243114, 0 10px 26px #1b243114;
+  --shadow-cta: 0 1px 2px #0062c433, 0 6px 16px #0062c426;
+
+  /* Movimento: durações e curvas únicas para todo o app. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -118,6 +134,135 @@ button:disabled {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Mensagem chegando: sobe um pouco e aparece. */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Mensagem do funcionário: entra pela direita. */
+@keyframes message-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Ação do agent concluída: o check "estala". */
+@keyframes pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Chip de ação aparecendo na linha de status. */
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Ponto "online" respirando. */
+@keyframes live-ring {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+
+/* Destaque breve quando um card muda de estado (ex.: rascunho confirmado). */
+@keyframes flash-success {
+  0% {
+    box-shadow: 0 0 0 0 #00bd6c55, var(--shadow-card);
+  }
+  100% {
+    box-shadow: 0 0 0 8px #00bd6c00, var(--shadow-card);
+  }
+}
+
+/* Indicador de digitação. */
+@keyframes typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+/* Skeleton de carregamento. */
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* Painel lateral entrando. */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Erro: tremidinha curta. */
+@keyframes shake {
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+  20%,
+  80% {
+    transform: translateX(2px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-3px);
+  }
+  40%,
+  60% {
+    transform: translateX(3px);
   }
 }
 

@@ -25,6 +25,11 @@
 .wrap[data-compact='true'] .toggle {
   align-self: flex-end;
 }
+.toggle {
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
 .toggle:hover {
   border-color: var(--rule);
   background: var(--paper);
@@ -35,7 +40,7 @@
 }
 .chevron {
   color: var(--ink-3);
-  transition: transform 0.15s;
+  transition: transform var(--dur-base) var(--ease-out);
 }
 .chevron[data-open='true'] {
   transform: rotate(180deg);
@@ -63,6 +68,13 @@
   inset: 0 auto 0 0;
   border-radius: inherit;
   background: var(--success);
+  transform-origin: left;
+  animation: grow var(--dur-slow) var(--ease-out) both;
+}
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
 }
 .meter[data-tone='mid'] > span,
 .bar[data-tone='mid'] > span {
@@ -83,7 +95,7 @@
   background: var(--desk);
   font-size: 13px;
   text-align: left;
-  animation: fade-in 0.15s ease-out;
+  animation: global(fade-in) 0.15s ease-out;
 }
 
 .rows {

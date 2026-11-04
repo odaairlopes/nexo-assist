@@ -37,6 +37,7 @@
 .railItem[aria-current='page'] {
   background: var(--paper);
   color: var(--ink);
+  box-shadow: var(--shadow-rail);
 }
 .railItem:hover {
   background: var(--paper);
@@ -55,6 +56,7 @@
   font-size: 10px;
   font-weight: 700;
   line-height: 12px;
+  animation: global(pop) var(--dur-slow) var(--ease-spring) both;
 }
 .railSpacer {
   flex: 1;
@@ -84,6 +86,7 @@
   margin: 0;
   font-size: 20px;
   font-weight: 700;
+  letter-spacing: -0.3px;
 }
 .search {
   display: flex;
@@ -125,6 +128,11 @@
   font-weight: 600;
   color: var(--ink-3);
 }
+.filter {
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
 .filter[aria-selected='true'] {
   background: var(--primary-soft);
   color: var(--primary-text);
@@ -156,6 +164,10 @@
   border-radius: 12px;
   background: transparent;
   text-align: left;
+}
+.item {
+  transition: background var(--dur-fast) var(--ease-out);
+  animation: global(fade-in) var(--dur-base) var(--ease-out) both;
 }
 .item:hover {
   background: #f6f7f9aa;
@@ -287,6 +299,7 @@
 .clientMsg {
   display: flex;
   padding-top: 12px;
+  animation: global(message-in) var(--dur-base) var(--ease-out) both;
 }
 .outMsg {
   display: flex;
@@ -294,6 +307,7 @@
   align-items: flex-end;
   gap: 4px;
   padding-top: 16px;
+  animation: global(message-in) var(--dur-base) var(--ease-out) both;
 }
 .sender {
   display: flex;
@@ -327,8 +341,10 @@
   max-width: 420px;
   padding: 8px 12px 6px;
   font-size: 14.5px;
+  line-height: 1.45;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  box-shadow: var(--shadow-bubble);
 }
 .bubble[data-kind='client'] {
   border-radius: 4px 12px 12px 12px;
@@ -365,6 +381,7 @@
   font-size: 13px;
 }
 .system {
+  animation: global(fade-in) var(--dur-slow) var(--ease-out) both;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -395,6 +412,7 @@
   background: var(--paper);
 }
 .summary {
+  animation: global(message-in) var(--dur-slow) var(--ease-out) both;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -457,6 +475,8 @@
   border-radius: 12px;
   background: var(--desk);
   color: var(--ink-3);
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .analystComposer {
   display: flex;
@@ -472,9 +492,16 @@
   background: var(--desk);
   outline: 0;
 }
+.analystComposer input {
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
 .analystComposer input:focus {
   border-color: var(--cta);
   background: var(--paper);
+  box-shadow: 0 0 0 3px #0062c41f;
 }
 .sendRound {
   display: grid;
@@ -486,6 +513,14 @@
   border-radius: 999px;
   background: var(--cta);
   color: #fff;
+}
+.sendRound {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    opacity var(--dur-base) var(--ease-out);
+}
+.sendRound:active:not(:disabled) {
+  transform: scale(0.92);
 }
 .sendRound:disabled {
   opacity: 0.5;
@@ -506,6 +541,7 @@
 
 /* ---------- Chamados ---------- */
 .history {
+  animation: global(slide-in-right) var(--dur-slow) var(--ease-out) both;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -633,6 +669,7 @@
   border-top: 1px solid var(--rule);
 }
 .ticketRow {
+  transition: opacity var(--dur-fast) var(--ease-out);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -665,6 +702,7 @@
   transform: rotate(90deg);
 }
 .ticketDesc {
+  animation: global(fade-in) var(--dur-base) var(--ease-out) both;
   margin: 0 0 12px 19px;
   font-size: 13px;
   color: var(--ink-2);

@@ -16,6 +16,7 @@
   margin: 0 0 6px;
   font-size: 24px;
   font-weight: 700;
+  letter-spacing: -0.4px;
 }
 .heading p {
   margin: 0;
@@ -25,6 +26,11 @@
   overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  animation: global(message-in) var(--dur-slow) var(--ease-out) both;
+}
+.card + .card {
+  animation-delay: 60ms;
 }
 .row {
   display: flex;

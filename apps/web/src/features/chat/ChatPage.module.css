@@ -31,6 +31,7 @@
 }
 
 .empty {
+  animation: global(message-in) var(--dur-slow) var(--ease-out) both;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -62,6 +63,16 @@
   font-size: 13.5px;
   font-weight: 500;
 }
+.suggestions button {
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.suggestions button:active {
+  transform: scale(0.97);
+}
 .suggestions button:hover {
   border-color: var(--primary);
   background: var(--primary-soft);
@@ -72,7 +83,7 @@
 .userRow {
   display: flex;
   justify-content: flex-end;
-  animation: fade-in 0.15s ease-out;
+  animation: global(message-in-right) var(--dur-base) var(--ease-out) both;
 }
 
 .userBubble {
@@ -82,6 +93,7 @@
   border-radius: 12px 12px 4px 12px;
   background: var(--ink);
   color: #fff;
+  line-height: 1.45;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -91,7 +103,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
-  animation: fade-in 0.18s ease-out;
+  animation: global(message-in) var(--dur-slow) var(--ease-out) both;
 }
 
 .statusLine {
@@ -111,6 +123,12 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  animation: global(chip-in) var(--dur-base) var(--ease-out) both;
+  transition: color var(--dur-base) var(--ease-out);
+}
+/* O check "estala" quando a ação termina. */
+.action > svg {
+  animation: global(pop) var(--dur-slow) var(--ease-spring) both;
 }
 .action[data-running='true'] {
   color: var(--primary-text);
@@ -137,9 +155,11 @@
   border: 1px solid var(--rule);
   border-radius: 4px 12px 12px 12px;
   background: var(--paper);
+  box-shadow: var(--shadow-xs);
 }
 .agentBubble p {
   margin: 0;
+  line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -155,7 +175,7 @@
   margin-left: 2px;
   vertical-align: -2px;
   background: var(--ink-3);
-  animation: pulse 1s infinite;
+  animation: global(pulse) 1s infinite;
 }
 
 .typing {
@@ -170,16 +190,17 @@
   height: 6px;
   border-radius: 999px;
   background: var(--ink-3);
-  animation: pulse 1.2s infinite;
+  animation: global(typing) 1.2s ease-in-out infinite;
 }
 .typing span:nth-child(2) {
-  animation-delay: 0.2s;
+  animation-delay: 0.15s;
 }
 .typing span:nth-child(3) {
-  animation-delay: 0.4s;
+  animation-delay: 0.3s;
 }
 
 .systemLine {
+  animation: global(fade-in) var(--dur-slow) var(--ease-out) both;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -207,6 +228,7 @@
 }
 
 .notice {
+  animation: global(message-in) var(--dur-slow) var(--ease-out) both;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -239,10 +261,16 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--paper);
-  transition: border-color 0.12s;
+  box-shadow: var(--shadow-input);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
 }
 .composer:focus-within {
   border-color: var(--cta);
+  box-shadow:
+    0 0 0 3px #0062c41f,
+    var(--shadow-input);
 }
 .composer[data-disabled='true'] {
   background: var(--desk);
@@ -276,8 +304,17 @@
   font-size: 13.5px;
   font-weight: 600;
 }
+.send {
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    opacity var(--dur-base) var(--ease-out);
+}
 .send:hover:not(:disabled) {
   background: var(--cta-hover);
+}
+.send:active:not(:disabled) {
+  transform: scale(0.96);
 }
 .send:disabled {
   opacity: 0.5;

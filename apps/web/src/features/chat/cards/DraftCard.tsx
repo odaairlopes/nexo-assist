@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { CATEGORIES, formatLocalDateTime, formatLocalTime, IMPACT_LABEL, isSameLocalDay, PRIORITY_LABEL, PRIORITY_TONE, type Category, type DraftEdit, type DraftView } from '@nexo/shared';
 import { Button, Dot } from '../../../components/ui.tsx';
 import { Field } from './TicketCard.tsx';
@@ -22,6 +22,9 @@ interface Props {
 
 export function DraftCard({ draft, interactive, onConfirm, onCancel, onEdit }: Props) {
   const [busy, setBusy] = useState<'confirm' | 'cancel' | 'edit' | null>(null);
+  // Anima só a TRANSIÇÃO para confirmado (não ao recarregar um rascunho já confirmado).
+  const initialStatus = useRef(draft.status);
+  const justConfirmed = draft.status === 'confirmed' && initialStatus.current !== 'confirmed';
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pending = draft.status === 'pending';
@@ -60,7 +63,12 @@ export function DraftCard({ draft, interactive, onConfirm, onCancel, onEdit }: P
         : { tone: 'warning' as const, text: 'Aguardando confirmação' };
 
   return (
-    <article className={s.card} data-muted={draft.status === 'cancelled'} aria-label={`Rascunho ${draft.code}`}>
+    <article
+      className={s.card}
+      data-muted={draft.status === 'cancelled'}
+      data-status={justConfirmed ? 'confirmed' : undefined}
+      aria-label={`Rascunho ${draft.code}`}
+    >
       <div className={s.body}>
         <div className={s.eyebrow}>
           <span className={s.eyebrowLabel}>{KIND_LABEL[draft.kind]}</span>

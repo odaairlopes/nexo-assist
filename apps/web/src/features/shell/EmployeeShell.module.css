@@ -21,6 +21,7 @@
   margin-bottom: 22px;
   font-size: 16px;
   font-weight: 700;
+  letter-spacing: -0.2px;
 }
 
 .nav {
@@ -44,6 +45,9 @@
   text-decoration: none;
   text-align: left;
   width: 100%;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
 }
 .navItem svg {
   color: var(--ink-3);
