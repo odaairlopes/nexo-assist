@@ -5,6 +5,7 @@ import { ApiError } from '../../api/client.ts';
 import { chatApi } from '../../api/endpoints.ts';
 import { Button, ErrorBanner, Pill, Spinner } from '../../components/ui.tsx';
 import { useConversationState } from '../../hooks/useConversationState.ts';
+import { useStickToBottom } from '../../hooks/useStickToBottom.ts';
 import { useTypingNotifier, useTypingState } from '../../hooks/useTyping.ts';
 import { useEventStream } from '../../hooks/useEventStream.ts';
 import { EmployeeShell } from '../shell/EmployeeShell.tsx';
@@ -34,6 +35,8 @@ export function ChatPage() {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { scrollToBottom, follow } = useStickToBottom(scrollRef, contentRef);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const refresh = useCallback(async () => {
@@ -64,11 +67,9 @@ export function ChatPage() {
   const notifyTyping = useTypingNotifier(conversation?.id ?? null);
   const analystTyping = conversation ? typing[conversation.id] : undefined;
 
-  // Rola para o fim quando chega conteúdo novo.
-  useLayoutEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length, live?.text, live?.actions.length]);
+  // Conteúdo novo (mensagem, ação do agent, "digitando…", aviso): acompanha o fim.
+  useLayoutEffect(follow, [follow, messages, live, analystTyping, conversation?.status]);
+
 
   const send = useCallback(
     async (text: string) => {
@@ -79,6 +80,7 @@ export function ChatPage() {
       try {
         const { message } = await chatApi.send(conversation.id, content);
         addLocal(message);
+        scrollToBottom();
         setDraft('');
       } catch (err) {
         setActionError(err instanceof ApiError ? err.message : 'Não foi possível enviar.');
@@ -87,7 +89,7 @@ export function ChatPage() {
         inputRef.current?.focus();
       }
     },
-    [conversation, sending, addLocal],
+    [conversation, sending, addLocal, scrollToBottom],
   );
 
   const handlers: ChatHandlers = useMemo(
@@ -160,7 +162,7 @@ export function ChatPage() {
     >
       <div className={s.chat}>
         <div className={s.messages} ref={scrollRef} aria-live="polite">
-          <div className={s.messagesInner}>
+          <div className={s.messagesInner} ref={contentRef}>
             {!conversation && !loadError && (
               <div className={s.center}>
                 <Spinner size={18} />

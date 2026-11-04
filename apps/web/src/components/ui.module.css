@@ -4,16 +4,16 @@
   flex-shrink: 0;
   background: var(--neutral-dot);
 }
-.dot[data-tone='warning'] {
+.dot[data-tone="warning"] {
   background: var(--warning);
 }
-.dot[data-tone='primary'] {
+.dot[data-tone="primary"] {
   background: var(--primary);
 }
-.dot[data-tone='success'] {
+.dot[data-tone="success"] {
   background: var(--success);
 }
-.dot[data-tone='danger'] {
+.dot[data-tone="danger"] {
   background: var(--danger);
 }
 
@@ -35,8 +35,8 @@
   bottom: -1px;
   width: 26%;
   height: 26%;
-  min-width: 10px;
-  min-height: 10px;
+  min-width: 14px;
+  min-height: 14px;
   border-radius: 999px;
   background: var(--success);
   border: 2px solid var(--paper);
@@ -78,28 +78,28 @@
 .button:hover:not(:disabled) {
   background: var(--desk);
 }
-.button[data-variant='primary'] {
+.button[data-variant="primary"] {
   background: var(--cta);
   border-color: var(--cta);
   color: #fff;
   font-weight: 600;
 }
-.button[data-variant='primary']:hover:not(:disabled) {
+.button[data-variant="primary"]:hover:not(:disabled) {
   background: var(--cta-hover);
 }
-.button[data-variant='ghost'] {
+.button[data-variant="ghost"] {
   border-color: transparent;
   background: transparent;
   box-shadow: none;
 }
-.button[data-variant='danger'] {
+.button[data-variant="danger"] {
   box-shadow: none;
   border-color: transparent;
   background: var(--danger-soft);
   color: var(--danger-text);
   font-weight: 600;
 }
-.button[data-variant='danger']:hover:not(:disabled) {
+.button[data-variant="danger"]:hover:not(:disabled) {
   background: #ee343b22;
 }
 .button:disabled {
@@ -116,27 +116,27 @@
   font-weight: 600;
   white-space: nowrap;
 }
-.pill[data-tone='success'] {
+.pill[data-tone="success"] {
   background: var(--success-soft);
   color: var(--success-text);
 }
 /* Status "online/disponível": o ponto respira. */
-.pill[data-tone='success'] > .dot {
+.pill[data-tone="success"] > .dot {
   color: #00bd6c80;
   animation: global(live-ring) 2s var(--ease-out) infinite;
 }
 .pill {
   animation: global(fade-in) var(--dur-base) var(--ease-out) both;
 }
-.pill[data-tone='warning'] {
+.pill[data-tone="warning"] {
   background: var(--warning-soft);
   color: var(--warning-text);
 }
-.pill[data-tone='primary'] {
+.pill[data-tone="primary"] {
   background: var(--primary-soft);
   color: var(--primary-text);
 }
-.pill[data-tone='danger'] {
+.pill[data-tone="danger"] {
   background: var(--danger-soft);
   color: var(--danger-text);
 }

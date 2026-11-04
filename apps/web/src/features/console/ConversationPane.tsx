@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { CheckCheck, CircleStop, Hand, Info, PauseCircle, SendHorizontal, Undo2 } from 'lucide-react';
 import { formatLocalTime, isSameLocalDay, type ChatMessage, type ConversationView, type SessionUser, type TransferKind } from '@nexo/shared';
 import { ApiError } from '../../api/client.ts';
@@ -6,6 +6,7 @@ import { consoleApi } from '../../api/endpoints.ts';
 import { DecisionDetails } from '../../components/decision/DecisionDetails.tsx';
 import { Avatar, Button, ErrorBanner, Pill, Spinner } from '../../components/ui.tsx';
 import type { LiveTurn } from '../../hooks/useConversationState.ts';
+import { useStickToBottom } from '../../hooks/useStickToBottom.ts';
 import { useTypingNotifier } from '../../hooks/useTyping.ts';
 import s from './Console.module.css';
 
@@ -98,14 +99,17 @@ export function ConversationPane({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { scrollToBottom, follow } = useStickToBottom(scrollRef, contentRef);
+  useLayoutEffect(follow, [follow, messages, live, typingName]);
   const mine = conversation.status === 'human' && conversation.assignedAnalyst?.email === me.email;
   const notifyTyping = useTypingNotifier(conversation.id, mine);
   const first = conversation.employee.name.split(' ')[0];
 
-  useLayoutEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length, conversation.id, live?.actions.length, typingName]);
+  // Trocou de conversa: começa no fim. O resto (mensagens, digitando…) o hook acompanha.
+  useEffect(() => {
+    scrollToBottom();
+  }, [conversation.id, scrollToBottom]);
 
   async function act(name: string, fn: () => Promise<{ conversation: ConversationView }>) {
     setBusy(name);
@@ -127,6 +131,7 @@ export function ConversationPane({
     setError(null);
     try {
       await consoleApi.send(conversation.id, content);
+      scrollToBottom();
       setText('');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível enviar.');
@@ -176,6 +181,7 @@ export function ConversationPane({
       </header>
 
       <div className={s.paneMessages} ref={scrollRef}>
+        <div className={s.paneInner} ref={contentRef}>
         {firstDay && (
           <div className={s.day}>
             <span>{isSameLocalDay(firstDay, new Date()) ? 'Hoje' : firstDay.toLocaleDateString('pt-BR')}</span>
@@ -210,6 +216,7 @@ export function ConversationPane({
             </div>
           </div>
         )}
+        </div>
       </div>
 
       <footer className={s.takeover}>
