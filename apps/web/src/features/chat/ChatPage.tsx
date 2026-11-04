@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Headset, RotateCcw, SendHorizontal } from 'lucide-react';
-import type { ConversationView, DraftEdit } from '@nexo/shared';
+import type { ConversationView, DraftEdit, ServerEvent } from '@nexo/shared';
 import { ApiError } from '../../api/client.ts';
 import { chatApi } from '../../api/endpoints.ts';
 import { Button, ErrorBanner, Pill, Spinner } from '../../components/ui.tsx';
 import { useConversationState } from '../../hooks/useConversationState.ts';
+import { useTypingNotifier, useTypingState } from '../../hooks/useTyping.ts';
 import { useEventStream } from '../../hooks/useEventStream.ts';
 import { EmployeeShell } from '../shell/EmployeeShell.tsx';
 import { ChatMessages, type ChatHandlers } from './ChatMessages.tsx';
@@ -49,7 +50,19 @@ export function ChatPage() {
     void refresh();
   }, [refresh]);
 
-  const stream = useEventStream(conversation ? `/api/conversations/${conversation.id}/events` : null, apply, refresh);
+  // Analista digitando aparece para o funcionário; a mensagem dele apaga o aviso.
+  const { typing, onTyping, clear } = useTypingState();
+  const onEvent = useCallback(
+    (e: ServerEvent) => {
+      if (e.type === 'typing' && e.role === 'analyst') onTyping(e);
+      if (e.type === 'message' && e.message.role === 'analyst') clear(e.message.conversationId);
+      apply(e);
+    },
+    [apply, onTyping, clear],
+  );
+  const stream = useEventStream(conversation ? `/api/conversations/${conversation.id}/events` : null, onEvent, refresh);
+  const notifyTyping = useTypingNotifier(conversation?.id ?? null);
+  const analystTyping = conversation ? typing[conversation.id] : undefined;
 
   // Rola para o fim quando chega conteúdo novo.
   useLayoutEffect(() => {
@@ -169,7 +182,7 @@ export function ChatPage() {
                 </div>
               </div>
             )}
-            <ChatMessages messages={messages} live={live} handlers={handlers} />
+            <ChatMessages messages={messages} live={live} handlers={handlers} typingName={analystTyping?.name ?? null} />
           </div>
         </div>
 
@@ -221,7 +234,10 @@ export function ChatPage() {
               ref={inputRef}
               rows={1}
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                if (e.target.value) notifyTyping();
+              }}
               onKeyDown={onKeyDown}
               placeholder={!conversation ? 'Carregando…' : composerDisabled ? 'Inicie uma nova conversa para continuar' : 'Escreva para o Nexo…'}
               disabled={composerDisabled}

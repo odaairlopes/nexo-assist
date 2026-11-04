@@ -176,6 +176,10 @@ export interface ConversationView {
   ticketRef: string | null;
   userMessageCount: number;
   messageLimit: number;
+  /** Funcionário com o app aberto agora (conexão em tempo real ativa). */
+  employeeOnline: boolean;
+  /** Mensagens do funcionário ainda sem resposta (agent, analista ou sistema). */
+  pendingUserMessages: number;
   lastMessage: { role: MessageRole; content: string; at: string } | null;
   createdAt: string;
   updatedAt: string;
@@ -190,7 +194,11 @@ export type ServerEvent =
   | { type: 'agent_thinking'; turnId: string }
   | { type: 'agent_action'; turnId: string; stepId: string; label: string; state: 'running' | 'done' | 'error' }
   | { type: 'agent_delta'; turnId: string; text: string }
-  | { type: 'agent_idle'; turnId: string };
+  | { type: 'agent_idle'; turnId: string }
+  /** Alguém está digitando (funcionário → analista, analista → funcionário). */
+  | { type: 'typing'; conversationId: string; role: 'user' | 'analyst'; name: string }
+  /** Funcionário ou analista ficou online/offline. */
+  | { type: 'presence'; email: string; online: boolean };
 
 // ---------- Requests ----------
 

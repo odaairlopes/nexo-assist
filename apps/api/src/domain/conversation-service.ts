@@ -75,11 +75,11 @@ export class ConversationService {
       // Mesma resposta de "não existe": não revela que a conversa é de outra pessoa.
       throw new DomainError('not_found', 'Conversa não encontrada');
     }
-    return conv;
+    return this.withPresence(conv);
   }
 
   currentConversation(user: SessionUser): ConversationView {
-    return this.store.findActiveConversation(user.email) ?? this.store.createConversation(user);
+    return this.withPresence(this.store.findActiveConversation(user.email) ?? this.store.createConversation(user));
   }
 
   /** Nova sessão: encerra a atual (se estiver com o agent) e abre outra. */
@@ -102,7 +102,33 @@ export class ConversationService {
   }
 
   publishConversation(conversation: ConversationView): void {
-    this.bus.publish(conversation.id, { type: 'conversation', conversation });
+    this.bus.publish(conversation.id, { type: 'conversation', conversation: this.withPresence(conversation) });
+  }
+
+  /** Completa a visão com a presença (estado em memória, não persistido). */
+  withPresence(conversation: ConversationView): ConversationView {
+    return { ...conversation, employeeOnline: this.bus.isOnline(conversation.employee.email) };
+  }
+
+  /** Lista do console, já com presença. */
+  listForConsole(): ConversationView[] {
+    return this.store.listConversations().map((c) => this.withPresence(c));
+  }
+
+  /**
+   * "Fulano está digitando…". Funcionário: sempre (o analista vê na lista).
+   * Analista: só quem está atendendo a conversa. Nada é persistido.
+   */
+  notifyTyping(user: SessionUser, conversationId: string): void {
+    const conv = this.requireConversation(user, conversationId);
+    if (conv.status === 'closed') return;
+    if (user.role === 'analyst' && (conv.status !== 'human' || conv.assignedAnalyst?.email !== user.email)) return;
+    this.bus.publish(conversationId, {
+      type: 'typing',
+      conversationId,
+      role: user.role === 'analyst' ? 'analyst' : 'user',
+      name: user.name,
+    });
   }
 
   addSystem(conversationId: string, content: string): ChatMessage {

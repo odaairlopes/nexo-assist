@@ -32,14 +32,43 @@ const AVATAR_COLORS = [
   ['#FBEFD0', '#8A6100'],
 ] as const;
 
+/** Cores fixas do protótipo para as pessoas que aparecem nele. */
+const DESIGN_COLORS: Record<string, readonly [string, string]> = {
+  'Ana Souza': ['#DCE9F7', '#0062C4'],
+  'Carla Mendes': ['#F6E3D3', '#9A4A12'],
+  'Bruno Tavares': ['#E6E1F7', '#5B3FC4'],
+  'Diego Ramos': ['#DDF0E6', '#1E7A4C'],
+  'Elisa Prado': ['#F7E1E6', '#A3324F'],
+  'Fábio Nunes': ['#E5E8EC', '#3D4656'],
+  'Gabriela Rocha': ['#FBEFD0', '#8A6100'],
+};
+
 function colorFor(seed: string): readonly [string, string] {
+  const fixed = DESIGN_COLORS[seed];
+  if (fixed) return fixed;
   let h = 0;
   for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return AVATAR_COLORS[h % AVATAR_COLORS.length]!;
 }
 
-export function Avatar({ name, size = 34, online, ringColor }: { name: string; size?: number; online?: boolean; ringColor?: string }) {
-  const [bg, fg] = colorFor(name);
+/**
+ * Avatar com iniciais. `tone="self"` usa o azul do "você" do protótipo (RL no
+ * console, AS na barra lateral). A bolinha verde só aparece com `online`.
+ */
+export function Avatar({
+  name,
+  size = 34,
+  online,
+  ringColor,
+  tone,
+}: {
+  name: string;
+  size?: number;
+  online?: boolean;
+  ringColor?: string;
+  tone?: 'self';
+}) {
+  const [bg, fg] = tone === 'self' ? (['var(--primary-soft)', 'var(--primary-text)'] as const) : colorFor(name);
   return (
     <span className={s.avatar} style={{ width: size, height: size, background: bg, color: fg, fontSize: size * 0.34 }} aria-hidden="true">
       {initials(name)}

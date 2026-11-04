@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LogOut, MessagesSquare, PanelRightOpen } from 'lucide-react';
+import { LogOut, MessageCircle, PanelRightOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { ConversationView, ServerEvent } from '@nexo/shared';
 import { ApiError } from '../../api/client.ts';
@@ -7,6 +7,7 @@ import { consoleApi } from '../../api/endpoints.ts';
 import { Avatar, ErrorBanner, NexoMark, Spinner } from '../../components/ui.tsx';
 import { useConversationState } from '../../hooks/useConversationState.ts';
 import { useEventStream } from '../../hooks/useEventStream.ts';
+import { useTypingState } from '../../hooks/useTyping.ts';
 import { useSession } from '../../session/SessionProvider.tsx';
 import { ConversationList } from './ConversationList.tsx';
 import { ConversationPane } from './ConversationPane.tsx';
@@ -46,19 +47,33 @@ export function ConsolePage() {
     void loadList();
   }, [loadList]);
 
-  // Canal global: mudanças de estado e mensagens novas de qualquer conversa.
-  const onConsoleEvent = useCallback((e: ServerEvent) => {
-    if (e.type === 'conversation') setConversations((l) => (l ? upsertConversation(l, e.conversation) : l));
-    if (e.type === 'message' && e.message.role !== 'system') {
-      setConversations((l) =>
-        l?.map((c) =>
-          c.id === e.message.conversationId
-            ? { ...c, updatedAt: e.message.createdAt, lastMessage: { role: e.message.role, content: e.message.content, at: e.message.createdAt } }
-            : c,
-        ) ?? l,
-      );
-    }
-  }, []);
+  const { typing, onTyping, clear } = useTypingState();
+
+  // Canal global: estado, mensagens, presença e "digitando" de todas as conversas.
+  const onConsoleEvent = useCallback(
+    (e: ServerEvent) => {
+      if (e.type === 'conversation') setConversations((l) => (l ? upsertConversation(l, e.conversation) : l));
+      if (e.type === 'typing' && e.role === 'user') onTyping(e);
+      if (e.type === 'presence') {
+        setConversations((l) => l?.map((c) => (c.employee.email === e.email ? { ...c, employeeOnline: e.online } : c)) ?? l);
+      }
+      if (e.type === 'message') {
+        const m = e.message;
+        if (m.role === 'user') clear(m.conversationId);
+        setConversations(
+          (l) =>
+            l?.map((c) => {
+              if (c.id !== m.conversationId) return c;
+              // Mensagem do funcionário soma uma "não lida"; qualquer resposta zera.
+              const pendingUserMessages = m.role === 'user' ? c.pendingUserMessages + 1 : 0;
+              if (m.role === 'system') return { ...c, pendingUserMessages };
+              return { ...c, pendingUserMessages, updatedAt: m.createdAt, lastMessage: { role: m.role, content: m.content, at: m.createdAt } };
+            }) ?? l,
+        );
+      }
+    },
+    [onTyping, clear],
+  );
   useEventStream('/api/console/events', onConsoleEvent, loadList);
 
   const loadSelected = useCallback(async () => {
@@ -78,7 +93,10 @@ export function ConsolePage() {
   useEventStream(selectedId ? `/api/conversations/${selectedId}/events` : null, apply, loadSelected);
 
   const waiting = conversations?.filter((c) => c.status === 'waiting_human').length ?? 0;
-  const selected = state.conversation && state.conversation.id === selectedId ? state.conversation : null;
+  const current = state.conversation && state.conversation.id === selectedId ? state.conversation : null;
+  // Presença vem do canal do console (lista); a conversa aberta herda dali.
+  const listed = conversations?.find((c) => c.id === selectedId);
+  const selected = current && listed ? { ...current, employeeOnline: listed.employeeOnline } : current;
 
   if (!user) return null;
 
@@ -89,7 +107,7 @@ export function ConsolePage() {
           <NexoMark size={22} />
         </div>
         <button type="button" className={s.railItem} aria-current="page" aria-label={`Conversas, ${waiting} aguardando`}>
-          <MessagesSquare size={19} />
+          <MessageCircle size={20} strokeWidth={2} />
           {waiting > 0 && <span className={s.badge}>{waiting}</span>}
         </button>
         <span className={s.railSpacer} />
@@ -106,7 +124,7 @@ export function ConsolePage() {
           <LogOut size={17} />
         </button>
         <span title={`${user.name} · Suporte ${user.supportLevel ?? ''}`}>
-          <Avatar name={user.name} size={36} online ringColor="var(--desk)" />
+          <Avatar name={user.name} size={36} tone="self" online ringColor="var(--desk)" />
         </span>
       </nav>
 
@@ -123,12 +141,13 @@ export function ConsolePage() {
 
       {conversations && (
         <>
-          <ConversationList conversations={conversations} selectedId={selectedId} me={user} onSelect={setSelectedId} />
+          <ConversationList conversations={conversations} selectedId={selectedId} me={user} typing={typing} onSelect={setSelectedId} />
           {selected ? (
             <ConversationPane
               conversation={selected}
               messages={state.messages}
               live={state.live}
+              typingName={selectedId && typing[selectedId]?.role === 'user' ? typing[selectedId]!.name : null}
               me={user}
               onChanged={(c) => apply({ type: 'conversation', conversation: c })}
             />

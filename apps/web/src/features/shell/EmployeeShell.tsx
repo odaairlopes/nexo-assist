@@ -29,7 +29,7 @@ export function EmployeeShell({ title, status, children }: { title: string; stat
         <div className={s.spacer} />
         {user && (
           <div className={s.user}>
-            <Avatar name={user.name} size={34} />
+            <Avatar name={user.name} size={34} tone="self" />
             <div className={s.userText}>
               <strong>{user.name}</strong>
               <span>{user.email}</span>

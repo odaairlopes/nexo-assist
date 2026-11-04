@@ -44,18 +44,20 @@
 }
 .badge {
   position: absolute;
-  top: -2px;
-  right: -4px;
-  min-width: 16px;
-  height: 16px;
+  top: -6px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
   padding: 0 5px;
   border-radius: 999px;
   border: 2px solid var(--desk);
   background: var(--cta);
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  line-height: 12px;
+  line-height: 1;
   animation: global(pop) var(--dur-slow) var(--ease-spring) both;
 }
 .railSpacer {
@@ -197,16 +199,41 @@
   font-size: 15.5px;
   font-weight: 500;
 }
-.itemTop strong[data-urgent='true'] {
+.itemTop strong[data-unread='true'] {
   font-weight: 600;
 }
 .itemTop span {
   font-size: 12.5px;
   color: var(--ink-3);
 }
-.itemTop span[data-urgent='true'] {
+.itemTop span[data-unread='true'] {
   color: var(--cta);
   font-weight: 600;
+}
+/* "digitando…" em verde itálico, como no protótipo. */
+.typingText {
+  flex: 1;
+  color: var(--success-text);
+  font-style: italic;
+  animation: global(fade-in) var(--dur-fast) var(--ease-out) both;
+}
+/* Contador de não lidas (bolinha azul). */
+.unread {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--cta);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-style: normal;
+  overflow: visible !important;
+  animation: global(pop) var(--dur-slow) var(--ease-spring) both;
 }
 .itemPreview {
   display: flex;
@@ -736,4 +763,29 @@
   .paneMessages {
     padding: 16px;
   }
+}
+
+/* "online · " no cabeçalho da conversa. */
+.onlineText {
+  color: var(--success-text);
+}
+
+/* Pontinhos de "digitando" dentro da bolha do funcionário. */
+.typingBubble {
+  display: inline-flex;
+  gap: 4px;
+  padding: 6px 2px;
+}
+.typingBubble span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ink-3);
+  animation: global(typing) 1.2s ease-in-out infinite;
+}
+.typingBubble span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typingBubble span:nth-child(3) {
+  animation-delay: 0.3s;
 }

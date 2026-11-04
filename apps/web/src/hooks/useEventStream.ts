@@ -61,9 +61,15 @@ export function useEventStream(
       };
     };
 
-    connect();
+    // Só conecta depois do evento "load": uma conexão SSE aberta durante o
+    // carregamento deixa o navegador com a aba eternamente "carregando".
+    const onLoad = () => connect();
+    if (document.readyState === 'complete') connect();
+    else window.addEventListener('load', onLoad, { once: true });
+
     return () => {
       disposed = true;
+      window.removeEventListener('load', onLoad);
       if (retryTimer) clearTimeout(retryTimer);
       source?.close();
     };

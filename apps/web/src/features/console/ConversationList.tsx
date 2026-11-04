@@ -2,9 +2,23 @@ import { useMemo, useState } from 'react';
 import { CheckCheck, Search } from 'lucide-react';
 import { formatLocalTime, isSameLocalDay, type ConversationView, type SessionUser } from '@nexo/shared';
 import { Avatar, Dot, Pill } from '../../components/ui.tsx';
+import type { TypingInfo } from '../../hooks/useTyping.ts';
 import s from './Console.module.css';
 
 export type Filter = 'all' | 'needs_you' | 'agent' | 'mine';
+
+/**
+ * Mantém conversas abertas e, de cada pessoa, a mais recente. Sessões
+ * encerradas antigas da mesma pessoa saem da lista (continuam no banco).
+ */
+export function latestPerEmployee(conversations: ConversationView[]): ConversationView[] {
+  const newest = new Map<string, string>();
+  for (const c of conversations) {
+    const seen = newest.get(c.employee.email);
+    if (!seen || c.updatedAt > seen) newest.set(c.employee.email, c.updatedAt);
+  }
+  return conversations.filter((c) => c.status !== 'closed' || newest.get(c.employee.email) === c.updatedAt);
+}
 
 export function matchesFilter(c: ConversationView, filter: Filter, me: SessionUser): boolean {
   switch (filter) {
@@ -76,29 +90,35 @@ export function ConversationList({
   conversations,
   selectedId,
   me,
+  typing,
   onSelect,
 }: {
   conversations: ConversationView[];
   selectedId: string | null;
   me: SessionUser;
+  /** Quem está digitando, por conversa. */
+  typing: Record<string, TypingInfo>;
   onSelect: (id: string) => void;
 }) {
   const [filter, setFilter] = useState<Filter>('needs_you');
   const [query, setQuery] = useState('');
 
+  // Uma linha por pessoa: sessões encerradas somem quando há uma conversa mais nova da mesma pessoa.
+  const current = useMemo(() => latestPerEmployee(conversations), [conversations]);
+
   const counts = useMemo(() => {
-    const c = { all: conversations.length, needs_you: 0, agent: 0, mine: 0 };
-    for (const conv of conversations) {
+    const c = { all: current.length, needs_you: 0, agent: 0, mine: 0 };
+    for (const conv of current) {
       if (matchesFilter(conv, 'needs_you', me)) c.needs_you++;
       if (matchesFilter(conv, 'agent', me)) c.agent++;
       if (matchesFilter(conv, 'mine', me)) c.mine++;
     }
     return c;
-  }, [conversations, me]);
+  }, [current, me]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return conversations
+    return current
       .filter((c) => matchesFilter(c, filter, me))
       .filter(
         (c) =>
@@ -109,7 +129,7 @@ export function ConversationList({
       )
       // Quem espera atendente vem primeiro; depois, as mais recentes.
       .sort((a, b) => Number(b.status === 'waiting_human') - Number(a.status === 'waiting_human') || b.updatedAt.localeCompare(a.updatedAt));
-  }, [conversations, filter, query, me]);
+  }, [current, filter, query, me]);
 
   const filters: { id: Filter; label: string }[] = [
     { id: 'all', label: 'Todas' },
@@ -143,7 +163,9 @@ export function ConversationList({
       <ul className={s.items}>
         {visible.length === 0 && <li className={s.emptyList}>Nenhuma conversa neste filtro.</li>}
         {visible.map((c) => {
-          const urgent = c.status === 'waiting_human';
+          const unread = c.pendingUserMessages;
+          const typingNow = typing[c.id]?.role === 'user';
+          const selected = c.id === selectedId;
           const preview = c.lastMessage
             ? c.lastMessage.role === 'agent'
               ? `Nexo: ${c.lastMessage.content}`
@@ -151,16 +173,32 @@ export function ConversationList({
             : 'Sem mensagens ainda';
           return (
             <li key={c.id}>
-              <button type="button" className={s.item} data-selected={c.id === selectedId} onClick={() => onSelect(c.id)}>
-                <Avatar name={c.employee.name} size={46} />
+              <button type="button" className={s.item} data-selected={selected} onClick={() => onSelect(c.id)}>
+                <Avatar
+                  name={c.employee.name}
+                  size={46}
+                  online={c.employeeOnline}
+                  ringColor={selected ? 'var(--desk)' : 'var(--paper)'}
+                />
                 <span className={s.itemText}>
                   <span className={s.itemTop}>
-                    <strong data-urgent={urgent}>{c.employee.name}</strong>
-                    <span data-urgent={urgent}>{timeLabel(c.updatedAt)}</span>
+                    <strong data-unread={unread > 0}>{c.employee.name}</strong>
+                    <span data-unread={unread > 0}>{timeLabel(c.updatedAt)}</span>
                   </span>
                   <span className={s.itemPreview}>
-                    {c.lastMessage?.role === 'agent' && <CheckCheck size={15} aria-hidden="true" />}
-                    <span>{preview}</span>
+                    {typingNow ? (
+                      <span className={s.typingText}>digitando…</span>
+                    ) : (
+                      <>
+                        {c.lastMessage?.role === 'agent' && <CheckCheck size={15} aria-hidden="true" />}
+                        <span>{preview}</span>
+                      </>
+                    )}
+                    {unread > 0 && !typingNow && (
+                      <span className={s.unread} aria-label={`${unread} não lidas`}>
+                        {unread}
+                      </span>
+                    )}
                   </span>
                   <Tag c={c} me={me} />
                 </span>

@@ -6,6 +6,7 @@ import { consoleApi } from '../../api/endpoints.ts';
 import { DecisionDetails } from '../../components/decision/DecisionDetails.tsx';
 import { Avatar, Button, ErrorBanner, Pill, Spinner } from '../../components/ui.tsx';
 import type { LiveTurn } from '../../hooks/useConversationState.ts';
+import { useTypingNotifier } from '../../hooks/useTyping.ts';
 import s from './Console.module.css';
 
 const TRANSFER_REASON: Record<TransferKind, string> = {
@@ -83,10 +84,13 @@ export function ConversationPane({
   live,
   me,
   onChanged,
+  typingName = null,
 }: {
   conversation: ConversationView;
   messages: ChatMessage[];
   live: LiveTurn | null;
+  /** Funcionário digitando agora (nome), se houver. */
+  typingName?: string | null;
   me: SessionUser;
   onChanged: (c: ConversationView) => void;
 }) {
@@ -95,12 +99,13 @@ export function ConversationPane({
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const mine = conversation.status === 'human' && conversation.assignedAnalyst?.email === me.email;
+  const notifyTyping = useTypingNotifier(conversation.id, mine);
   const first = conversation.employee.name.split(' ')[0];
 
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length, conversation.id, live?.actions.length]);
+  }, [messages.length, conversation.id, live?.actions.length, typingName]);
 
   async function act(name: string, fn: () => Promise<{ conversation: ConversationView }>) {
     setBusy(name);
@@ -140,6 +145,7 @@ export function ConversationPane({
         <div className={s.who}>
           <strong>{conversation.employee.name}</strong>
           <span>
+            {conversation.employeeOnline && <span className={s.onlineText}>online · </span>}
             {conversation.employee.department}
             {conversation.ticketRef ? ` · ${conversation.ticketRef}` : ''}
           </span>
@@ -178,6 +184,17 @@ export function ConversationPane({
         {messages.map((m) => (
           <Message key={m.id} m={m} />
         ))}
+        {typingName && !live && (
+          <div className={s.clientMsg} aria-live="polite">
+            <div className={s.bubble} data-kind="client">
+              <span className={s.typingBubble} aria-label={`${typingName} está digitando`}>
+                <span />
+                <span />
+                <span />
+              </span>
+            </div>
+          </div>
+        )}
         {live && (
           <div className={s.outMsg}>
             <div className={s.sender}>
@@ -244,7 +261,10 @@ export function ConversationPane({
             <input
               id="analyst-input"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (e.target.value) notifyTyping();
+              }}
               placeholder={`Responder ${first}…`}
               maxLength={2000}
               autoFocus

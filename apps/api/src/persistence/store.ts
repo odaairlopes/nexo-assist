@@ -120,6 +120,15 @@ export class Store {
     const last = this.db
       .prepare(`SELECT role, content, created_at FROM messages WHERE conversation_id = ? AND role != 'system' ORDER BY seq DESC LIMIT 1`)
       .get(row.id) as { role: MessageRole; content: string; created_at: string } | undefined;
+    // Mensagens do funcionário no fim da conversa, sem resposta de ninguém depois.
+    const recent = this.db
+      .prepare(`SELECT role FROM messages WHERE conversation_id = ? ORDER BY seq DESC LIMIT 30`)
+      .all(row.id) as { role: MessageRole }[];
+    let pendingUserMessages = 0;
+    for (const m of recent) {
+      if (m.role !== 'user') break;
+      pendingUserMessages++;
+    }
     return {
       id: row.id,
       employee: { email: row.employee_email, name: row.employee_name, department: row.department },
@@ -129,6 +138,9 @@ export class Store {
       ticketRef: row.ticket_ref,
       userMessageCount: row.user_message_count,
       messageLimit: MAX_USER_MESSAGES_PER_SESSION,
+      // Presença é estado em memória (EventBus); o ConversationService preenche.
+      employeeOnline: false,
+      pendingUserMessages,
       lastMessage: last ? { role: last.role, content: last.content, at: last.created_at } : null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,

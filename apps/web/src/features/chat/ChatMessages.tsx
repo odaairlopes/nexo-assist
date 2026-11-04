@@ -131,14 +131,35 @@ function LiveAgent({ live }: { live: LiveTurn }) {
   );
 }
 
+/** Analista digitando: mesmo visual do "agent pensando", com o nome dele. */
+function HumanTyping({ name }: { name: string }) {
+  return (
+    <div className={s.agentMessage} aria-live="polite">
+      <div className={s.statusLine}>
+        <strong>{name}</strong>
+        <span className={s.humanTag}>Analista</span>
+        <span className={s.action}>digitando…</span>
+      </div>
+      <div className={s.typing} aria-label={`${name} está digitando`}>
+        <span />
+        <span />
+        <span />
+      </div>
+    </div>
+  );
+}
+
 export function ChatMessages({
   messages,
   live,
   handlers,
+  typingName = null,
 }: {
   messages: ChatMessage[];
   live: LiveTurn | null;
   handlers: ChatHandlers;
+  /** Nome do analista que está digitando agora, se houver. */
+  typingName?: string | null;
 }) {
   // Só a última mensagem do agent (sem outra fala depois) aceita cliques nas opções/cards.
   const lastAgentIndex = messages.reduce((acc, m, i) => (m.role === 'agent' ? i : acc), -1);
@@ -182,6 +203,7 @@ export function ChatMessages({
         );
       })}
       {live && <LiveAgent live={live} />}
+      {!live && typingName && <HumanTyping name={typingName} />}
     </>
   );
 }

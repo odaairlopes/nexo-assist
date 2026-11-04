@@ -82,13 +82,33 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
 
   app.get('/api/conversations/:id/events', { preHandler: requireUser }, async (req, reply) => {
     const { id } = ConvParams.parse(req.params);
-    conversations.requireConversation(sessionUser(req), id);
-    openSse(req, reply, (send) => bus.subscribe(id, send));
+    const user = sessionUser(req);
+    conversations.requireConversation(user, id);
+    // Conexão aberta = pessoa online (o console vê a bolinha verde).
+    const leave = bus.connect(user.email);
+    openSse(req, reply, (send) => {
+      const off = bus.subscribe(id, send);
+      return () => {
+        off();
+        leave();
+      };
+    });
   });
+
+  // "Digitando…": efêmero, só tempo real. Limite generoso, mas evita abuso.
+  app.post(
+    '/api/conversations/:id/typing',
+    { preHandler: requireUser, config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      const { id } = ConvParams.parse(req.params);
+      conversations.notifyTyping(sessionUser(req), id);
+      return reply.code(204).send();
+    },
+  );
 
   // ---------- Console do analista ----------
 
-  app.get('/api/console/conversations', analystOnly, async () => ({ conversations: store.listConversations() }));
+  app.get('/api/console/conversations', analystOnly, async () => ({ conversations: conversations.listForConsole() }));
 
   app.get('/api/console/conversations/:id', analystOnly, async (req) => {
     const { id } = ConvParams.parse(req.params);
@@ -103,17 +123,17 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
 
   app.post('/api/console/conversations/:id/take', analystOnly, async (req) => {
     const { id } = ConvParams.parse(req.params);
-    return { conversation: conversations.takeOver(sessionUser(req), id) };
+    return { conversation: conversations.withPresence(conversations.takeOver(sessionUser(req), id)) };
   });
 
   app.post('/api/console/conversations/:id/return', analystOnly, async (req) => {
     const { id } = ConvParams.parse(req.params);
-    return { conversation: conversations.returnToAgent(sessionUser(req), id) };
+    return { conversation: conversations.withPresence(conversations.returnToAgent(sessionUser(req), id)) };
   });
 
   app.post('/api/console/conversations/:id/close', analystOnly, async (req) => {
     const { id } = ConvParams.parse(req.params);
-    return { conversation: conversations.closeConversation(sessionUser(req), id) };
+    return { conversation: conversations.withPresence(conversations.closeConversation(sessionUser(req), id)) };
   });
 
   app.post('/api/console/conversations/:id/messages', analystOnly, async (req, reply) => {
@@ -123,6 +143,13 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
   });
 
   app.get('/api/console/events', analystOnly, async (req, reply) => {
-    openSse(req, reply, (send) => bus.subscribeConsole(send));
+    const leave = bus.connect(sessionUser(req).email);
+    openSse(req, reply, (send) => {
+      const off = bus.subscribeConsole(send);
+      return () => {
+        off();
+        leave();
+      };
+    });
   });
 }

@@ -28,17 +28,19 @@
   letter-spacing: 0.01em;
 }
 
+/* Bolinha "online" do protótipo: ~10–11px, borda na cor do fundo, no canto. */
 .online {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 24%;
-  height: 24%;
-  min-width: 9px;
-  min-height: 9px;
+  right: -1px;
+  bottom: -1px;
+  width: 26%;
+  height: 26%;
+  min-width: 10px;
+  min-height: 10px;
   border-radius: 999px;
   background: var(--success);
   border: 2px solid var(--paper);
+  animation: global(pop) var(--dur-slow) var(--ease-spring) both;
 }
 
 .spinner {
