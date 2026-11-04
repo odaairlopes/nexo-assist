@@ -7,7 +7,7 @@
  * Filtre com: npm run eval -- duplicidade privacidade
  */
 import type { SessionUser } from '@nexo/shared';
-import { createAgentChain } from '../agent/nexo-agent.ts';
+import { createNexoMastra } from '../mastra/index.ts';
 import { AgentTurnRunner } from '../agent/turn-runner.ts';
 import { config } from '../config.ts';
 import { ConversationService } from '../domain/conversation-service.ts';
@@ -36,7 +36,7 @@ for (const [i, sc] of scenarios.entries()) {
   const bus = new EventBus();
   const { client } = inMemoryHelpdesk();
   const conversations = new ConversationService(store, bus, client, quiet);
-  const agents = createAgentChain(config.llm, { helpdesk: client, store, conversations });
+  const { agents } = createNexoMastra(config.llm, { helpdesk: client, store, conversations });
   conversations.attachRunner(
     new AgentTurnRunner({ agents, store, bus, conversations, helpdesk: client, llm: config.llm, minConfidence: config.agent.minConfidence, log: quiet }),
   );

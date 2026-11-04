@@ -5,7 +5,7 @@ import cookie from '@fastify/cookie';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import { z } from 'zod';
-import { createAgentChain } from './agent/nexo-agent.ts';
+import { createNexoMastra } from './mastra/index.ts';
 import { AgentTurnRunner } from './agent/turn-runner.ts';
 import { HelpdeskClient } from './clients/helpdesk-client.ts';
 import type { AppConfig } from './config.ts';
@@ -51,7 +51,7 @@ export async function buildApp(opts: BuildOptions): Promise<{ app: FastifyInstan
   const runner =
     opts.runnerFactory?.({ conversations, store, bus, helpdesk }) ??
     new AgentTurnRunner({
-      agents: createAgentChain(config.llm, { helpdesk, store, conversations }),
+      agents: createNexoMastra(config.llm, { helpdesk, store, conversations }).agents,
       store,
       bus,
       conversations,
