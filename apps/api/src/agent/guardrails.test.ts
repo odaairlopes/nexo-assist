@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DraftView, Ticket } from '@nexo/shared';
 import type { Decision } from './decision-schema.ts';
-import { finalizeTurn, type FinalizeInput } from './guardrails.ts';
+import { finalizeTurn, stripInternalNotes, type FinalizeInput } from './guardrails.ts';
 
 const now = new Date('2026-10-20T13:00:00Z');
 
@@ -120,6 +120,12 @@ describe('finalizeTurn (travas determinísticas)', () => {
     const out = finalizeTurn(base({ decision: null, error: '429', pendingTransfer: transfer }));
     expect(out.transfer).toEqual(transfer);
     expect(out.action).toBe('transferred');
+  });
+
+  it('remove anotações internas que o modelo copie do histórico', () => {
+    expect(stripInternalNotes('Qual deles?\n\n[exibido: opções: "INC-1", "INC-2"]')).toBe('Qual deles?');
+    const out = finalizeTurn(base({ decision: decision({ reply: 'Ok. [Evento do sistema: Transferida]' }) }));
+    expect(out.reply).toBe('Ok.');
   });
 
   it('numera as opções quando há pergunta destacada', () => {

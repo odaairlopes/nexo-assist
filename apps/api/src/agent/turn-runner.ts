@@ -7,7 +7,7 @@ import type { Store } from '../persistence/store.ts';
 import type { EventBus } from '../realtime/event-bus.ts';
 import { DecisionSchema, type Decision } from './decision-schema.ts';
 import { finalizeTurn } from './guardrails.ts';
-import { toModelMessages, type ModelMessage } from './history.ts';
+import { describeScreen, toModelMessages, type ModelMessage } from './history.ts';
 import { providerOptionsFor, type AgentChain, type NexoAgent } from './nexo-agent.ts';
 import { prefetchContext, relevantPrefetchSteps } from './prefetch.ts';
 import { RESPOND_TOOL } from './tools.ts';
@@ -31,6 +31,7 @@ interface Deps {
 }
 
 const PROFILE_TTL_MS = 5 * 60_000;
+const PRIMARY_COOLDOWN_MS = 10 * 60_000;
 
 /**
  * Alguns modelos escrevem os argumentos de `respond` como texto em vez de
@@ -71,6 +72,8 @@ export function partialReply(json: string): string | null {
  */
 export class AgentTurnRunner implements TurnRunner {
   private readonly profiles = new Map<string, { at: number; employee: Employee }>();
+  /** Até quando o modelo principal fica fora após falhar (cota/travamento). */
+  private primaryCooldownUntil = 0;
 
   constructor(private readonly deps: Deps) {}
 
@@ -241,15 +244,25 @@ export class AgentTurnRunner implements TurnRunner {
 
     const requestContext = new RequestContext();
     requestContext.set(TURN_KEY, turn);
-    const messages = toModelMessages(store.listMessages(conv.id, llm.historyWindow));
+    const history = store.listMessages(conv.id, llm.historyWindow);
+    const messages = toModelMessages(history);
+    turn.prefetched.screenText = describeScreen(history);
 
-    let modelUsed = agents.primary.model;
-    let { decision, usage, error } = await this.attempt(agents.primary, messages, requestContext, conv);
-    // Reserva: só se o principal falhou ANTES de qualquer ferramenta (sem efeitos a repetir).
-    if (!decision && agents.fallback && turn.steps.length === 0) {
-      turn.guardrails.push(`${agents.primary.model} falhou (${(error ?? '').slice(0, 120)}); resposta gerada pela reserva ${agents.fallback.model}.`);
-      modelUsed = agents.fallback.model;
-      ({ decision, usage, error } = await this.attempt(agents.fallback, messages, requestContext, conv));
+    // Disjuntor: se o principal falhou há pouco (cota/travamento), vai direto à reserva.
+    const primaryCooling = agents.fallback !== null && Date.now() < this.primaryCooldownUntil;
+    const first = primaryCooling ? agents.fallback! : agents.primary;
+    if (primaryCooling) turn.guardrails.push(`${agents.primary.model} em pausa após falha recente; usando ${first.model}.`);
+
+    let modelUsed = first.model;
+    let { decision, usage, error } = await this.attempt(first, messages, requestContext, conv);
+    if (!decision && first === agents.primary && agents.fallback) {
+      this.primaryCooldownUntil = Date.now() + PRIMARY_COOLDOWN_MS;
+      // Reserva: só se o principal falhou ANTES de qualquer ferramenta (sem efeitos a repetir).
+      if (turn.steps.length === 0) {
+        turn.guardrails.push(`${agents.primary.model} falhou (${(error ?? '').slice(0, 120)}); resposta gerada pela reserva ${agents.fallback.model}.`);
+        modelUsed = agents.fallback.model;
+        ({ decision, usage, error } = await this.attempt(agents.fallback, messages, requestContext, conv));
+      }
     }
 
     const final = finalizeTurn({

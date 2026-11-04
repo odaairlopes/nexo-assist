@@ -24,9 +24,15 @@ export class TurnContext {
    * Contexto pré-carregado pelo código antes de chamar o modelo (chamados do
    * funcionário e artigos relevantes): economiza idas e voltas ao LLM.
    */
-  prefetched: { ticketsText: string | null; kbText: string | null; steps: { kind: 'tickets' | 'kb'; step: TraceStep }[] } = {
+  prefetched: {
+    ticketsText: string | null;
+    kbText: string | null;
+    screenText: string | null;
+    steps: { kind: 'tickets' | 'kb'; step: TraceStep }[];
+  } = {
     ticketsText: null,
     kbText: null,
+    screenText: null,
     steps: [],
   };
   confirmedDraftIds = new Set<string>();

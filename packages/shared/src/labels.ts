@@ -64,7 +64,7 @@ export function formatRelative(iso: string, now: Date = new Date()): string {
   const h = Math.round(diffMin / 60);
   if (h < 24) return `há ${h} h`;
   const d = Math.round(h / 24);
-  if (d < 7) return d === 1 ? 'há 1 dia' : `há ${d} dias`;
+  if (d < 14) return d === 1 ? 'há 1 dia' : `há ${d} dias`;
   const w = Math.round(d / 7);
   return w === 1 ? 'há 1 semana' : `há ${w} semanas`;
 }

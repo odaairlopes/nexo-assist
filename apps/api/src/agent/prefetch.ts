@@ -22,7 +22,8 @@ export async function prefetchContext(turn: TurnContext, helpdesk: HelpdeskClien
     const lines = tickets.value.map((t) => {
       const c = compact(t, now);
       const flags = [c.vencido ? 'VENCIDO' : null, c.pode_reabrir ? 'pode reabrir' : null].filter(Boolean).join(', ');
-      return `- ${c.id} | ${c.titulo} | ${c.categoria} | ${c.prioridade} | ${c.status} | aberto ${c.aberto_em} | atualizado ${c.ultima_atualizacao}${flags ? ` | ${flags}` : ''}`;
+      const desc = t.description.length > 110 ? `${t.description.slice(0, 110)}…` : t.description;
+      return `- ${c.id} | ${c.titulo} | ${c.categoria} | ${c.prioridade} | ${c.status} | aberto ${c.aberto_em} | atualizado ${c.ultima_atualizacao}${flags ? ` | ${flags}` : ''} | ${desc}`;
     });
     turn.prefetched.ticketsText = lines.length ? lines.join('\n') : '(nenhum chamado)';
     turn.prefetched.steps.push({

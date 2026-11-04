@@ -58,8 +58,13 @@ function Message({ m }: { m: ChatMessage }) {
                     ? `rascunho ${b.draft.code} (${b.draft.status === 'confirmed' ? `confirmado → ${b.draft.ticketId}` : b.draft.status})`
                     : b.kind === 'ticket_selector'
                       ? `seletor: ${b.tickets.map((t) => t.id).join(', ')}`
-                      : `opções: ${b.options.map((o) => o.label).join(' | ')}`,
+                      : b.options.length > 0
+                        ? `opções: ${b.options.map((o) => o.label).join(' | ')}`
+                        : b.question
+                          ? `perguntou: ${b.question}`
+                          : '',
               )
+              .filter(Boolean)
               .join(' · ')}
           </span>
         )}

@@ -32,6 +32,14 @@ export interface FinalizedTurn {
 
 const NO_DECISION_INTENTS: readonly Intent[] = ['greeting', 'out_of_scope'];
 
+/** Remove anotações internas ("[exibido: …]", "[Evento do sistema: …]") que um modelo copie do histórico. */
+export function stripInternalNotes(text: string): string {
+  return text
+    .replace(/\[(?:exibido|Evento do sistema)[^\]]*\]/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 /**
  * Camada determinística entre o modelo e o funcionário. Função pura (fácil de
  * testar): recebe a decisão do LLM e o que realmente aconteceu no turno, e
@@ -80,7 +88,7 @@ export function finalizeTurn(input: FinalizeInput): FinalizedTurn {
   }
 
   // Remove anotações internas do histórico que o modelo às vezes copia.
-  let reply = decision.reply.replace(/[exibido:[^]]*]/g, '').trim();
+  let reply = stripInternalNotes(decision.reply);
   let action = decision.action;
   let confidence = Math.max(0, Math.min(1, decision.confidence));
   let transfer = input.pendingTransfer;

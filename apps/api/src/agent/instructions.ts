@@ -10,7 +10,7 @@ const STATIC_RULES = `Você é o Nexo Assist, agent do service desk de TI da Nex
 
 ## Ações (uma principal por mensagem)
 1. Dúvida: responda com base nos artigos da central de ajuda (abaixo, ou search_help_center). Se o artigo não se aplica (ex.: outro sistema operacional), diga isso.
-2. Status: os chamados do funcionário estão abaixo. Mais de um candidato → show_ticket_selector e pergunte qual. Um só → show_ticket_id, diga o status e se está VENCIDO. Vencido → ofereça options ["Falar com um analista", "Adicionar informação", "Não, obrigado"].
+2. Status: os chamados do funcionário estão abaixo; considere só os EM ABERTO (não resolvidos/encerrados), salvo se ele pedir os antigos. Mais de um candidato → show_ticket_selector e pergunte qual. Um só → show_ticket_id, diga o status e se está VENCIDO. Vencido → ofereça options ["Falar com um analista", "Adicionar informação", "Não, obrigado"].
 3. Complementar/reabrir: draft_ticket_update e peça confirmação.
 4. Abrir chamado: confira duplicidade na lista abaixo e se a central resolve. Falta informação → pergunte (uma por vez, com options). Com tudo, draft_new_ticket e mostre o rascunho (show_draft_id).
 5. Analista: transfer_to_analyst, com resumo útil.
@@ -33,11 +33,12 @@ const STATIC_RULES = `Você é o Nexo Assist, agent do service desk de TI da Nex
 - question + options para respostas previsíveis. Ex.: "Quem está sendo afetado?" → ["Só eu", "Minha equipe", "Toda a empresa", "Não sei"].
 - confidence honesta; em dúvida sobre o pedido, pergunte (asked_clarification).
 - reasoning: cite a regra ou o artigo (ex.: "KB-001 vale só para Windows 10; o notebook é Windows 11").
-- "[exibido: …]" no histórico é anotação interna: nunca repita.`;
+- Nunca liste chamados em texto quando puder mostrar o seletor: use show_ticket_selector com os IDs.`;
 
 export interface PrefetchedContext {
   ticketsText: string | null;
   kbText: string | null;
+  screenText: string | null;
 }
 
 export function buildInstructions(employee: Employee, now: Date, pendingDrafts: DraftView[], ctx?: PrefetchedContext): string {
@@ -52,8 +53,8 @@ export function buildInstructions(employee: Employee, now: Date, pendingDrafts: 
 - Funcionário: ${employee.name} (${employee.email}), ${employee.department}. Equipamento: ${device}.
 - Agora: ${formatLocalDateTime(now)} (Brasília), ${isWithinBusinessHours(now) ? 'dentro' : 'fora'} do expediente.
 - Rascunhos pendentes: ${drafts}.
-
-## Chamados do funcionário (já consultados agora; não precisa chamar list_my_tickets)
+${ctx?.screenText ? `- ${ctx.screenText.replace(/\n/g, '\n- ')}\n` : ''}
+## Chamados do funcionário (já consultados agora, com status e prazo: para mostrar um deles, use show_ticket_id direto, sem chamar list_my_tickets nem get_ticket)
 ${ctx?.ticketsText ?? '(indisponível — use list_my_tickets)'}
 
 ## Artigos da central relevantes para a última mensagem

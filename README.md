@@ -46,7 +46,7 @@ Outros comandos:
 | `npm run typecheck` | TypeScript estrito em todos os pacotes |
 | `npm run seed:reset` | Apaga `./data`; o seed roda de novo no próximo start |
 
-O `npm run dev` sobe três processos: o **helpdesk** simulado (`:4001`), a **API** com o agent (`:4000`) e a **interface** (`:5173`, que faz proxy de `/api`).
+O `npm run dev` sobe três processos: o **helpdesk** simulado (`:4001`), a **API** com o agent (`:4000`) e a **interface** (`:5173`, que faz proxy de `/api`). Se alguma porta estiver ocupada, defina `API_PORT`, `HELPDESK_PORT` + `HELPDESK_URL` e `WEB_PORT` no ambiente.
 
 ### Modelo: gratuito, rápido e com reserva automática
 
