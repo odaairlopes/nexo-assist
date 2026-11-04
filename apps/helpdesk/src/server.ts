@@ -1,3 +1,4 @@
+import { explainListenError } from '@nexo/shared';
 import { buildApp } from './app.ts';
 import { config } from './config.ts';
 import { openDatabase } from './db.ts';
@@ -28,5 +29,5 @@ const shutdown = async () => {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-await app.listen({ port: config.port, host: config.host });
+await app.listen({ port: config.port, host: config.host }).catch((err: unknown) => explainListenError(err, 'helpdesk', config.port, 'HELPDESK_PORT'));
 console.log(`[helpdesk] legado simulado em http://${config.host}:${config.port} (falha ${Math.round(config.failureRate * 100)}%)`);

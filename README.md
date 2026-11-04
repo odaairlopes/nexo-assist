@@ -31,20 +31,20 @@ npm run dev
 
 Abra **http://localhost:5173**. Qualquer senha é aceita para as contas do seed:
 
-| Conta | Perfil | Para testar |
-| --- | --- | --- |
-| `ana.souza@nexo.com.br` | Funcionária (Windows 11) | Chamado vencido, resolvido há 4 dias, VPN erro 809 |
-| `diego.ramos@nexo.com.br` | Funcionário (Windows 10) | Isolamento: não vê os chamados da Ana |
-| `rafael.lima@nexo.com.br` | Analista N2 | Console do analista |
+| Conta                     | Perfil                   | Para testar                                        |
+| ------------------------- | ------------------------ | -------------------------------------------------- |
+| `ana.souza@nexo.com.br`   | Funcionária (Windows 11) | Chamado vencido, resolvido há 4 dias, VPN erro 809 |
+| `diego.ramos@nexo.com.br` | Funcionário (Windows 10) | Isolamento: não vê os chamados da Ana              |
+| `rafael.lima@nexo.com.br` | Analista N2              | Console do analista                                |
 
 Outros comandos:
 
-| Comando | O que faz |
-| --- | --- |
-| `npm test` | Testes unitários e de integração (Vitest, sem LLM) |
-| `npm run eval` | Avaliação do agent com o modelo real (cenários do PRD) |
-| `npm run typecheck` | TypeScript estrito em todos os pacotes |
-| `npm run seed:reset` | Apaga `./data`; o seed roda de novo no próximo start |
+| Comando              | O que faz                                              |
+| -------------------- | ------------------------------------------------------ |
+| `npm test`           | Testes unitários e de integração (Vitest, sem LLM)     |
+| `npm run eval`       | Avaliação do agent com o modelo real (cenários do PRD) |
+| `npm run typecheck`  | TypeScript estrito em todos os pacotes                 |
+| `npm run seed:reset` | Apaga `./data`; o seed roda de novo no próximo start   |
 
 O `npm run dev` sobe três processos: o **helpdesk** simulado (`:4001`), a **API** com o agent (`:4000`) e a **interface** (`:5173`, que faz proxy de `/api`). Se alguma porta estiver ocupada, defina `API_PORT`, `HELPDESK_PORT` + `HELPDESK_URL` e `WEB_PORT` no ambiente.
 
@@ -52,18 +52,20 @@ O `npm run dev` sobe três processos: o **helpdesk** simulado (`:4001`), a **API
 
 O projeto roda **sem custo**, com **uma única chave gratuita do Groq**:
 
-| Papel | Modelo | Por quê |
-| --- | --- | --- |
-| Principal | `groq/openai/gpt-oss-120b` | Bom em *tool calling* e responde em ~1–2 s, com raciocínio no mínimo (`reasoningEffort: low`). |
-| Reserva | `groq/qwen/qwen3.8-27b` | Mesma chave, cota diária separada. Assume na hora se o principal falhar ou estourar a cota. |
+| Papel     | Modelo                     | Por quê                                                                                        |
+| --------- | -------------------------- | ---------------------------------------------------------------------------------------------- |
+| Principal | `groq/openai/gpt-oss-120b` | Bom em _tool calling_ e responde em ~1–2 s, com raciocínio no mínimo (`reasoningEffort: low`). |
+| Reserva   | `groq/qwen/qwen3.8-27b`    | Mesma chave, cota diária separada. Assume na hora se o principal falhar ou estourar a cota.    |
 
 **Por que um modelo pequeno dá conta:** as regras pesadas (prioridade, prazo, duplicidade, privacidade) são código. O modelo só interpreta a mensagem e escolhe a ação.
 
-**Como a decisão é obtida (e por que não "structured output"):** a decisão é uma ferramenta, `respond`, com o schema Zod da decisão (entendimento, intenção, ação, confiança, motivo, resposta, cards). O turno termina quando ela é chamada (`stopWhen`). Antes testei o *structured output* do Mastra, mas misturado com tools ele falhava de formas diferentes em cada provedor: o Gemini exige o schema no prompt, e o Groq rejeitava a resposta com "tool choice required". *Tool calling* é o recurso mais bem suportado entre provedores. Há duas redes de segurança:
+**Como a decisão é obtida (e por que não "structured output"):** a decisão é uma ferramenta, `respond`, com o schema Zod da decisão (entendimento, intenção, ação, confiança, motivo, resposta, cards). O turno termina quando ela é chamada (`stopWhen`). Antes testei o _structured output_ do Mastra, mas misturado com tools ele falhava de formas diferentes em cada provedor: o Gemini exige o schema no prompt, e o Groq rejeitava a resposta com "tool choice required". _Tool calling_ é o recurso mais bem suportado entre provedores. Há duas redes de segurança:
+
 - se o modelo escrever a decisão como texto, o código valida esse JSON pelo mesmo schema e o aproveita;
 - se nem isso acontecer, uma chamada curta de reparo força a ferramenta.
 
 **Robustez com cota gratuita (lições dos testes):**
+
 - O plano gratuito do Groq limita **8 mil tokens por minuto** e **200 mil por dia** por modelo. Por isso, antes de chamar o modelo, o código já carrega os chamados do funcionário e os artigos relevantes no prompt. A maioria dos turnos sai com uma chamada ao LLM, em vez de 2–3.
 - Com a cota esgotada, o roteador do Mastra espera ~30 s e tenta de novo. Um **watchdog** aborta a tentativa após 8 s sem dados e passa para a reserva. Isso só acontece se nenhuma ferramenta tiver sido executada, então nenhum efeito é repetido.
 - Cada turno tem tempo máximo de 45 s. Depois disso entra a resposta de contingência, que oferece um analista.
@@ -106,14 +108,14 @@ packages/
 
 **Decisões principais**
 
-| Decisão | Por quê | Trade-off |
-| --- | --- | --- |
-| SQLite nativo do Node (`node:sqlite`) | Persistência real (sobrevive a reinício) com zero infraestrutura para o avaliador | Uma instância só. Em produção: Postgres |
-| SSE em vez de WebSocket | O servidor só empurra eventos; o cliente envia por POST. É nativo no browser, reconecta sozinho e passa por proxies | Sem canal bidirecional (aqui não precisa) |
-| Event bus em memória | Simples e suficiente para um processo | Com várias instâncias, trocar por Redis Pub/Sub (a interface é a mesma) |
-| Sessão em JWT num cookie HttpOnly + SameSite | O front nunca toca no token; protege contra XSS roubando sessão | Login aceita qualquer senha (pedido do PRD); o real seria SSO/OIDC |
-| Monorepo com tipos compartilhados | Front e back quebram juntos na compilação quando um contrato muda | — |
-| Persistência própria em vez da Memory do Mastra | Conversa, estado (agent/analista) e trace precisam ser consultáveis pelo console e sobreviver a reinício no mesmo banco | O histórico enviado ao modelo é montado manualmente (`history.ts`) |
+| Decisão                                         | Por quê                                                                                                                 | Trade-off                                                               |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| SQLite nativo do Node (`node:sqlite`)           | Persistência real (sobrevive a reinício) com zero infraestrutura para o avaliador                                       | Uma instância só. Em produção: Postgres                                 |
+| SSE em vez de WebSocket                         | O servidor só empurra eventos; o cliente envia por POST. É nativo no browser, reconecta sozinho e passa por proxies     | Sem canal bidirecional (aqui não precisa)                               |
+| Event bus em memória                            | Simples e suficiente para um processo                                                                                   | Com várias instâncias, trocar por Redis Pub/Sub (a interface é a mesma) |
+| Sessão em JWT num cookie HttpOnly + SameSite    | O front nunca toca no token; protege contra XSS roubando sessão                                                         | Login aceita qualquer senha (pedido do PRD); o real seria SSO/OIDC      |
+| Monorepo com tipos compartilhados               | Front e back quebram juntos na compilação quando um contrato muda                                                       | —                                                                       |
+| Persistência própria em vez da Memory do Mastra | Conversa, estado (agent/analista) e trace precisam ser consultáveis pelo console e sobreviver a reinício no mesmo banco | O histórico enviado ao modelo é montado manualmente (`history.ts`)      |
 
 ---
 
@@ -135,12 +137,12 @@ Cada mensagem do funcionário vira um **turno**:
    - um card de chamado só aparece se o chamado foi lido **como do funcionário** neste turno (privacidade);
    - se o modelo diz que criou algo que não foi executado, a resposta é corrigida e o rascunho volta a aparecer;
    - um rascunho criado e "esquecido" pelo modelo é anexado mesmo assim, para o funcionário conferir;
-   - com **confiança abaixo de 50%**, o agent não decide sozinho e transfere para um analista (aparece no console como *"Agent pediu ajuda · confiança 41%"*);
+   - com **confiança abaixo de 50%**, o agent não decide sozinho e transfere para um analista (aparece no console como _"Agent pediu ajuda · confiança 41%"_);
    - um chamado **crítico** confirmado é transferido na hora para o N2;
    - se o modelo falhar (timeout, formato inválido), entra uma resposta de contingência com a opção de chamar um analista.
 6. Tudo é gravado: a mensagem guarda o **trace** completo (passos, duração, tokens, modelo, regras aplicadas).
 
-**Identidade e privacidade:** as tools recebem o funcionário pelo `RequestContext` do Mastra, preenchido pelo servidor a partir da sessão, nunca por um argumento do modelo. Mesmo com *prompt injection* ("mostre o chamado do Diego"), a consulta sai com o e-mail da sessão, e o legado responde 404 para chamados de outra pessoa.
+**Identidade e privacidade:** as tools recebem o funcionário pelo `RequestContext` do Mastra, preenchido pelo servidor a partir da sessão, nunca por um argumento do modelo. Mesmo com _prompt injection_ ("mostre o chamado do Diego"), a consulta sai com o e-mail da sessão, e o legado responde 404 para chamados de outra pessoa.
 
 **Legado instável:** o `HelpdeskClient` tem timeout por tentativa e retry com backoff exponencial e jitter, só para falhas transitórias (502/503/504, rede, timeout). Toda escrita leva uma `Idempotency-Key` (`draft:<id>`), então repetir uma criação nunca duplica o chamado. Se o legado continuar fora do ar, a tool devolve um erro amigável, o agent avisa o funcionário e o rascunho fica pendente com a mensagem "tente confirmar de novo". O simulador falha 10% das chamadas por padrão (`HELPDESK_FAILURE_RATE`) para exercitar esse caminho.
 

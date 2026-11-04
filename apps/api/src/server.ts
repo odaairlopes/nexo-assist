@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { explainListenError } from '@nexo/shared';
 import { buildApp } from './app.ts';
 import { config, withKey } from './config.ts';
 
@@ -14,7 +15,7 @@ const shutdown = async () => {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-await app.listen({ port: config.port, host: config.host });
+await app.listen({ port: config.port, host: config.host }).catch((err: unknown) => explainListenError(err, 'api', config.port, 'API_PORT'));
 app.log.info(
   `Nexo Assist API em http://${config.host}:${config.port} · modelo ${config.llm.model}` +
     (config.llm.fallbackModel ? ` · reserva ${config.llm.fallbackModel}` : ' · sem reserva'),
@@ -22,6 +23,6 @@ app.log.info(
 if (!config.llm.baseUrl && !withKey(config.llm.model)) {
   app.log.warn(
     `Sem chave para ${config.llm.model}. O agent vai responder com a mensagem de contingência até você preencher a chave no .env ` +
-      '(Gemini grátis: https://aistudio.google.com/apikey).',
+      '(chave grátis do Groq: https://console.groq.com/keys).',
   );
 }
