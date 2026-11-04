@@ -32,6 +32,13 @@ export function withKey(model: string | undefined): boolean {
   return !vars || vars.some((v) => Boolean(process.env[v]));
 }
 
+function fallbackModel(): string | null {
+  const raw = process.env.LLM_FALLBACK_MODEL;
+  // Ausente = padrão gratuito; vazio = sem reserva.
+  const model = raw === undefined ? 'groq/qwen/qwen3.8-27b' : raw.trim();
+  return model && withKey(model) ? model : null;
+}
+
 const jwtSecret = required('JWT_SECRET');
 if (jwtSecret.length < 32) throw new Error('JWT_SECRET precisa ter ao menos 32 caracteres');
 
@@ -50,20 +57,24 @@ export const config = {
   llm: {
     /**
      * Modelo no formato do model router do Mastra: "provedor/modelo".
-     * Padrão gratuito: Gemini 2.5 Flash (cota free do Google AI Studio).
+     * Padrão gratuito: gpt-oss-120b no Groq (cota free, ~1–2 s por resposta).
      */
-    model: process.env.LLM_MODEL || 'google/gemini-2.5-flash',
+    model: process.env.LLM_MODEL || 'groq/openai/gpt-oss-120b',
     /**
      * Reserva automática quando o principal falha ou estoura a cota
-     * (ex.: groq/openai/gpt-oss-120b, também gratuito). Vazio = sem reserva.
+     * (padrão: qwen3.8-27b, também gratuito no Groq, com cota diária separada). Vazio = sem reserva.
      */
-    fallbackModel: withKey(process.env.LLM_FALLBACK_MODEL) ? process.env.LLM_FALLBACK_MODEL! : null,
+    fallbackModel: fallbackModel(),
     /** Endpoint compatível com OpenAI (Ollama, LM Studio, vLLM…). Opcional. */
     baseUrl: process.env.LLM_BASE_URL || null,
     apiKey: process.env.LLM_API_KEY || null,
     maxSteps: num('LLM_MAX_STEPS', 6),
+    /** Tempo máximo de um turno do agent; depois disso, resposta de contingência. */
+    turnTimeoutMs: num('LLM_TURN_TIMEOUT_MS', 45_000),
+    /** Silêncio máximo do provedor no meio do stream antes de passar para a reserva. */
+    stallTimeoutMs: num('LLM_STALL_TIMEOUT_MS', 8_000),
     /** Quantas mensagens recentes vão para o modelo a cada turno. */
-    historyWindow: num('LLM_HISTORY_WINDOW', 14),
+    historyWindow: num('LLM_HISTORY_WINDOW', 10),
   },
   agent: {
     /** Abaixo disso, o agent não decide sozinho: transfere para um analista. */

@@ -40,9 +40,32 @@ const NO_DECISION_INTENTS: readonly Intent[] = ['greeting', 'out_of_scope'];
  */
 export function finalizeTurn(input: FinalizeInput): FinalizedTurn {
   const guardrails: string[] = [];
-  const { decision } = input;
+  const decision = input.decision
+    ? {
+        ...input.decision,
+        question: input.decision.question ?? null,
+        options: input.decision.options ?? [],
+        show_ticket_id: input.decision.show_ticket_id ?? null,
+        show_ticket_selector: input.decision.show_ticket_selector ?? [],
+        show_draft_id: input.decision.show_draft_id ?? null,
+      }
+    : null;
 
   if (!decision) {
+    // O modelo falhou DEPOIS de pedir a transferência: ela vale mesmo assim.
+    if (input.pendingTransfer) {
+      return {
+        reply: 'Chamei um analista para te ajudar. Ele continua com você aqui nesta conversa.',
+        ui: [],
+        intent: 'talk_to_human',
+        action: 'transferred',
+        confidence: 0,
+        understood: 'Transferência solicitada; o modelo falhou antes de concluir a resposta.',
+        reasoning: `A ferramenta de transferência foi executada; a resposta final falhou: ${input.error ?? 'erro desconhecido'}.`,
+        guardrails: ['Transferência aplicada mesmo com falha do modelo na resposta final.'],
+        transfer: input.pendingTransfer,
+      };
+    }
     return {
       reply: 'Desculpe, tive um problema para processar sua mensagem agora. Pode tentar de novo? Se preferir, chamo um analista.',
       ui: [{ kind: 'options', question: null, options: [{ label: 'Falar com um analista', value: 'Quero falar com um analista' }], numbered: false }],
@@ -56,7 +79,8 @@ export function finalizeTurn(input: FinalizeInput): FinalizedTurn {
     };
   }
 
-  let reply = decision.reply.trim();
+  // Remove anotações internas do histórico que o modelo às vezes copia.
+  let reply = decision.reply.replace(/[exibido:[^]]*]/g, '').trim();
   let action = decision.action;
   let confidence = Math.max(0, Math.min(1, decision.confidence));
   let transfer = input.pendingTransfer;

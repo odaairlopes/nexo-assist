@@ -10,7 +10,7 @@ Agent de atendimento do service desk de TI da Nexo. O funcionário descreve o pr
 
 ## Como rodar
 
-Requisitos: **Node.js 22.13+** (usa o SQLite nativo do Node, então não precisa de Docker nem de banco) e uma chave **gratuita** do Gemini, gerada em [aistudio.google.com/apikey](https://aistudio.google.com/apikey) sem cartão.
+Requisitos: **Node.js 22.13+** (usa o SQLite nativo do Node, então não precisa de Docker nem de banco) e uma chave **gratuita** do Groq, gerada em [console.groq.com/keys](https://console.groq.com/keys) sem cartão.
 
 ```bash
 npm install
@@ -22,8 +22,7 @@ cp .env.example .env
 
 Edite o `.env`:
 
-- preencha `GOOGLE_GENERATIVE_AI_API_KEY`;
-- opcionalmente, preencha `GROQ_API_KEY`, também gratuita ([console.groq.com/keys](https://console.groq.com/keys)), para ter a reserva automática;
+- preencha `GROQ_API_KEY` (a mesma chave serve para o modelo principal e para a reserva);
 - troque `JWT_SECRET` e `HELPDESK_SERVICE_TOKEN`.
 
 ```bash
@@ -49,22 +48,28 @@ Outros comandos:
 
 O `npm run dev` sobe três processos: o **helpdesk** simulado (`:4001`), a **API** com o agent (`:4000`) e a **interface** (`:5173`, que faz proxy de `/api`).
 
-### Modelo: por que Gemini 2.5 Flash (gratuito) + Groq de reserva
+### Modelo: gratuito, rápido e com reserva automática
 
-O projeto roda **sem custo**:
+O projeto roda **sem custo**, com **uma única chave gratuita do Groq**:
 
 | Papel | Modelo | Por quê |
 | --- | --- | --- |
-| Principal | `google/gemini-2.5-flash` | Cota gratuita no Google AI Studio, sem cartão. Faz bem *tool calling* e JSON, e é rápido. O "thinking" fica desligado (`thinkingBudget: 0`): o agent não precisa dele, e desligar economiza cota e latência. |
-| Reserva | `groq/openai/gpt-oss-120b` | Também gratuito (Groq). Assume sozinho quando o Gemini responde 429 (cota estourada), erro 5xx ou timeout, usando os fallbacks de modelo do Mastra. |
+| Principal | `groq/openai/gpt-oss-120b` | Bom em *tool calling* e responde em ~1–2 s, com raciocínio no mínimo (`reasoningEffort: low`). |
+| Reserva | `groq/qwen/qwen3.8-27b` | Mesma chave, cota diária separada. Assume na hora se o principal falhar ou estourar a cota. |
 
-**Por que um modelo pequeno dá conta:** o agent não precisa de raciocínio profundo. As regras pesadas (prioridade, prazo, duplicidade, privacidade) são calculadas por código, e o modelo só interpreta a mensagem e escolhe a ação. Por isso, um modelo rápido e barato é a escolha mais eficiente.
+**Por que um modelo pequeno dá conta:** as regras pesadas (prioridade, prazo, duplicidade, privacidade) são código. O modelo só interpreta a mensagem e escolhe a ação.
 
-**Detalhe técnico:** o Gemini não aceita `response_format` junto com tools, então o código ativa sozinho o `jsonPromptInjection` do Mastra. Nesse modo, o schema da decisão vai no prompt e é validado com Zod na saída.
+**Como a decisão é obtida (e por que não "structured output"):** a decisão é uma ferramenta, `respond`, com o schema Zod da decisão (entendimento, intenção, ação, confiança, motivo, resposta, cards). O turno termina quando ela é chamada (`stopWhen`). Antes testei o *structured output* do Mastra, mas misturado com tools ele falhava de formas diferentes em cada provedor: o Gemini exige o schema no prompt, e o Groq rejeitava a resposta com "tool choice required". *Tool calling* é o recurso mais bem suportado entre provedores. Há duas redes de segurança:
+- se o modelo escrever a decisão como texto, o código valida esse JSON pelo mesmo schema e o aproveita;
+- se nem isso acontecer, uma chamada curta de reparo força a ferramenta.
 
-**Trade-off da cota gratuita:** o próprio Google descreve o free tier como *best effort*, com limites baixos (por projeto, por modelo e por dia) que podem mudar sem aviso. É por isso que existe a reserva. Além disso, no plano gratuito o Google pode usar os dados enviados para melhorar os produtos. Isso é aceitável para um desafio com dados fictícios, mas não para dados reais da empresa: em produção, o plano pago muda isso e é uma troca de uma linha (`LLM_MODEL`).
+**Robustez com cota gratuita (lições dos testes):**
+- O plano gratuito do Groq limita **8 mil tokens por minuto** e **200 mil por dia** por modelo. Por isso, antes de chamar o modelo, o código já carrega os chamados do funcionário e os artigos relevantes no prompt. A maioria dos turnos sai com uma chamada ao LLM, em vez de 2–3.
+- Com a cota esgotada, o roteador do Mastra espera ~30 s e tenta de novo. Um **watchdog** aborta a tentativa após 8 s sem dados e passa para a reserva. Isso só acontece se nenhuma ferramenta tiver sido executada, então nenhum efeito é repetido.
+- Cada turno tem tempo máximo de 45 s. Depois disso entra a resposta de contingência, que oferece um analista.
+- Não usei a lista de fallbacks nativa do Mastra (`model: [...]`): na versão usada, ela acrescentava ~40 s a toda chamada. A reserva é feita no `AgentTurnRunner`.
 
-Outros provedores funcionam trocando o `LLM_MODEL` (ex.: `openai/gpt-4.1-mini` + `OPENAI_API_KEY`). Também dá para usar um endpoint local compatível com OpenAI (`LLM_BASE_URL=http://localhost:11434/v1`, Ollama). Nos meus testes, modelos locais de 7–8B não conseguiram combinar tool calling com saída estruturada: o agent caiu na resposta de contingência, que é o comportamento esperado quando o modelo falha.
+**Trade-off:** no plano gratuito, os limites mudam sem aviso e o provedor pode usar os dados. Isso é aceitável com dados fictícios. Em produção, basta trocar o `LLM_MODEL` para um plano pago (ex.: `openai/gpt-4.1-mini` + `OPENAI_API_KEY`). Gemini e modelos locais (Ollama, via `LLM_BASE_URL`) também funcionam, mas nos meus testes o Gemini gratuito ficou lento ou sobrecarregado, e modelos locais de 7–8B não chamaram tools de forma confiável.
 
 ---
 
@@ -149,7 +154,7 @@ Cada mensagem do funcionário vira um **turno**:
    - helpdesk: token de serviço, isolamento entre funcionários, idempotência e falha simulada;
    - `ConversationService`, contra o helpdesk real em memória: o agent não roda com analista, o ciclo assumir → devolver, o limite de 30 mensagens, a confirmação idempotente e o crítico transferindo;
    - `finalizeTurn`: card de outra pessoa omitido, confiança baixa transferindo, modelo "mentindo" e sendo corrigido, e a contingência.
-3. **Avaliação com o modelo real (`npm run eval`):** 11 cenários tirados das histórias do PRD (dúvida, status sem número, chamado vencido, pergunta antes de abrir, rascunho com prioridade correta, duplicidade, reabertura, privacidade, fora do escopo, pedido de analista, caso crítico). As checagens olham a **decisão** (ferramentas usadas, cards, estado da conversa), não o texto exato. Assim, dá para trocar de modelo ou de prompt e comparar o resultado.
+3. **Avaliação com o modelo real (`npm run eval`):** 11 cenários tirados das histórias do PRD (dúvida, status sem número, chamado vencido, pergunta antes de abrir, rascunho com prioridade correta, duplicidade, reabertura, privacidade, fora do escopo, pedido de analista, caso crítico). As checagens olham a **decisão** (ferramentas usadas, cards, estado da conversa), não o texto exato. Assim, dá para trocar de modelo ou de prompt e comparar o resultado. Resultados durante o desenvolvimento: 61% → 89% com `gpt-oss-120b` à medida que corrigi o formato da decisão, e 96% (27/28) com `qwen3.8-27b`. Entre cenários há uma pausa de 20 s (`EVAL_PAUSE_MS`) para respeitar o limite por minuto do plano gratuito.
 4. **Transparência como ferramenta de depuração:** o mesmo painel **Por quê?** aparece para o analista no console. Ele vê por que o agent transferiu e com que confiança.
 
 ---

@@ -26,7 +26,10 @@ import { HelpdeskRequestError, HelpdeskUnavailableError, type HelpdeskClient } f
 import type { ConversationService } from '../domain/conversation-service.ts';
 import { DomainError } from '../domain/errors.ts';
 import type { Store } from '../persistence/store.ts';
+import { DecisionSchema } from './decision-schema.ts';
 import { TURN_KEY, type TurnContext } from './turn-context.ts';
+
+export const RESPOND_TOOL = 'respond';
 
 export interface ToolDeps {
   helpdesk: HelpdeskClient;
@@ -60,7 +63,7 @@ function friendlyError(err: unknown) {
 }
 
 /** Resumo compacto de um chamado para o modelo (economiza tokens). */
-function compact(t: Ticket, now: Date) {
+export function compact(t: Ticket, now: Date) {
   const sla = computeSlaStatus(t, now);
   const daysWithoutUpdate = Math.floor(businessMinutesBetween(new Date(t.updatedAt), now) / BUSINESS_MINUTES_PER_DAY);
   return {
@@ -400,6 +403,22 @@ export function buildTools(deps: ToolDeps) {
     },
   });
 
+  /**
+   * A decisão do turno é uma tool, não "structured output": funciona igual em
+   * qualquer provedor (tool calling é o recurso mais bem suportado), e com
+   * toolChoice "required" o modelo é obrigado a terminar o turno por aqui.
+   */
+  const respond = createTool({
+    id: RESPOND_TOOL,
+    description:
+      'OBRIGATÓRIO e SEMPRE por último: registra sua decisão e a mensagem para o funcionário, encerrando o turno. Chame depois de usar as ferramentas necessárias. Não escreva a resposta fora desta ferramenta.',
+    inputSchema: DecisionSchema,
+    execute: async (decision, context) => {
+      turnOf(context).decision = decision;
+      return { ok: true as const };
+    },
+  });
+
   return {
     search_help_center: searchHelpCenter,
     list_my_tickets: listMyTickets,
@@ -409,5 +428,6 @@ export function buildTools(deps: ToolDeps) {
     confirm_draft: confirmDraft,
     cancel_draft: cancelDraft,
     transfer_to_analyst: transferToAnalyst,
+    [RESPOND_TOOL]: respond,
   };
 }

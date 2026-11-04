@@ -6,9 +6,9 @@ import { buildTools, type ToolDeps } from './tools.ts';
 import { TURN_KEY, type TurnContext } from './turn-context.ts';
 
 type ModelId = `${string}/${string}`;
-export type SingleModel = string | { id: ModelId; url: string; apiKey?: string };
+type JsonValue = string | number | boolean | null | { [k: string]: JsonValue } | JsonValue[];
 
-function single(model: string, llm: AppConfig['llm']): SingleModel {
+function modelConfig(model: string, llm: AppConfig['llm']): string | { id: ModelId; url: string; apiKey?: string } {
   if (llm.baseUrl) {
     const id = (model.includes('/') ? model : `custom/${model}`) as ModelId;
     return { id, url: llm.baseUrl, ...(llm.apiKey ? { apiKey: llm.apiKey } : {}) };
@@ -16,48 +16,54 @@ function single(model: string, llm: AppConfig['llm']): SingleModel {
   return model;
 }
 
-/** Desliga o "thinking" do Gemini 2.5: o agent não precisa e ele custa cota e latência. */
-function providerOptionsFor(model: string) {
-  return model.startsWith('google/gemini-2.5') ? { google: { thinkingConfig: { thinkingBudget: 0 } } } : undefined;
+/**
+ * Raciocínio no mínimo: as regras pesadas são código, então o modelo não
+ * precisa "pensar" muito — isso economiza cota e latência.
+ */
+export function providerOptionsFor(model: string): Record<string, Record<string, JsonValue>> | undefined {
+  if (model.startsWith('google/gemini-2.5')) return { google: { thinkingConfig: { thinkingBudget: 0 } } };
+  if (model.startsWith('groq/openai/gpt-oss')) return { groq: { reasoningEffort: 'low' } };
+  return undefined;
 }
 
 /**
- * Modelo principal + reserva opcional. Com a reserva, o Mastra troca de
- * provedor sozinho em erro 5xx, rate limit (429) ou timeout — importante com
- * cotas gratuitas, que são baixas e instáveis.
+ * Um agent por modelo. A reserva (quando configurada) é um segundo agent que
+ * o AgentTurnRunner aciona se o principal falhar antes de executar qualquer
+ * ferramenta. Decisão: não usamos a lista de fallbacks nativa do Mastra
+ * porque, na versão usada, ela adicionava ~40 s de espera em toda chamada.
  */
-export function resolveModel(llm: AppConfig['llm']) {
-  const chain = [llm.model, ...(llm.fallbackModel ? [llm.fallbackModel] : [])];
-  return chain.map((m, i) => {
-    const providerOptions = providerOptionsFor(m);
-    return {
-      model: single(m, llm),
-      maxRetries: i === 0 ? 1 : 2,
-      ...(providerOptions ? { providerOptions } : {}),
-    };
-  });
-}
-
-/**
- * Gemini não aceita response_format JSON junto com tools, e endpoints locais
- * costumam não suportar: nesses casos o schema vai no prompt. Como a reserva
- * pode assumir no meio da conversa, vale para a cadeia inteira.
- */
-export function needsJsonPromptInjection(llm: AppConfig['llm']): boolean {
-  const models = [llm.model, llm.fallbackModel ?? ''];
-  return Boolean(llm.baseUrl) || models.some((m) => m.startsWith('google/'));
-}
-
-export function createNexoAgent(llm: AppConfig['llm'], deps: ToolDeps & { store: Store }) {
+export function createNexoAgent(llm: AppConfig['llm'], deps: ToolDeps & { store: Store }, model: string = llm.model) {
   return new Agent({
-    id: 'nexo-assist',
+    id: `nexo-assist-${model.replace(/[^a-z0-9]+/gi, '-')}`,
     name: 'Nexo Assist',
     description: 'Agent de atendimento do service desk de TI da Nexo',
     instructions: ({ requestContext }) => {
       const turn = requestContext.get(TURN_KEY) as TurnContext;
-      return buildInstructions(turn.employee, deps.now?.() ?? new Date(), deps.store.listPendingDrafts(turn.conversationId));
+      return buildInstructions(
+        turn.employee,
+        deps.now?.() ?? new Date(),
+        deps.store.listPendingDrafts(turn.conversationId),
+        turn.prefetched,
+      );
     },
-    model: resolveModel(llm),
+    model: modelConfig(model, llm),
+    // Sem novas tentativas no mesmo provedor: em 429/erro, a reserva assume na hora
+    // (com cota esgotada, repetir só faria o funcionário esperar).
+    maxRetries: 0,
     tools: buildTools(deps),
   });
+}
+
+export type NexoAgent = ReturnType<typeof createNexoAgent>;
+
+export interface AgentChain {
+  primary: { agent: NexoAgent; model: string };
+  fallback: { agent: NexoAgent; model: string } | null;
+}
+
+export function createAgentChain(llm: AppConfig['llm'], deps: ToolDeps & { store: Store }): AgentChain {
+  return {
+    primary: { agent: createNexoAgent(llm, deps, llm.model), model: llm.model },
+    fallback: llm.fallbackModel ? { agent: createNexoAgent(llm, deps, llm.fallbackModel), model: llm.fallbackModel } : null,
+  };
 }

@@ -7,7 +7,7 @@
  * Filtre com: npm run eval -- duplicidade privacidade
  */
 import type { SessionUser } from '@nexo/shared';
-import { createNexoAgent } from '../agent/nexo-agent.ts';
+import { createAgentChain } from '../agent/nexo-agent.ts';
 import { AgentTurnRunner } from '../agent/turn-runner.ts';
 import { config } from '../config.ts';
 import { ConversationService } from '../domain/conversation-service.ts';
@@ -27,14 +27,18 @@ const rows: string[] = [];
 
 console.log(`\nNexo Assist · eval com ${config.llm.model} · ${scenarios.length} cenários\n`);
 
-for (const sc of scenarios) {
+// Pausa entre cenários: o plano gratuito do Groq limita tokens por minuto (8k).
+const pauseMs = Number(process.env.EVAL_PAUSE_MS ?? 20_000);
+
+for (const [i, sc] of scenarios.entries()) {
+  if (i > 0 && pauseMs > 0) await new Promise((r) => setTimeout(r, pauseMs));
   const store = new Store(':memory:');
   const bus = new EventBus();
   const { client } = inMemoryHelpdesk();
   const conversations = new ConversationService(store, bus, client, quiet);
-  const agent = createNexoAgent(config.llm, { helpdesk: client, store, conversations });
+  const agents = createAgentChain(config.llm, { helpdesk: client, store, conversations });
   conversations.attachRunner(
-    new AgentTurnRunner({ agent, store, bus, conversations, helpdesk: client, llm: config.llm, minConfidence: config.agent.minConfidence, log: quiet }),
+    new AgentTurnRunner({ agents, store, bus, conversations, helpdesk: client, llm: config.llm, minConfidence: config.agent.minConfidence, log: quiet }),
   );
 
   const e = await client.getEmployee(sc.employee);

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Employee, ServerEvent, Ticket, TraceStep } from '@nexo/shared';
 import type { TransferRequest } from '../domain/conversation-service.ts';
+import type { Decision } from './decision-schema.ts';
 
 /**
  * Estado de UM turno do agent. Vive no RequestContext do Mastra, então as
@@ -17,6 +18,17 @@ export class TurnContext {
   /** Rascunhos criados neste turno. */
   readonly draftIds = new Set<string>();
   pendingTransfer: TransferRequest | null = null;
+  /** Decisão registrada pela tool `respond` (encerra o turno). */
+  decision: Decision | null = null;
+  /**
+   * Contexto pré-carregado pelo código antes de chamar o modelo (chamados do
+   * funcionário e artigos relevantes): economiza idas e voltas ao LLM.
+   */
+  prefetched: { ticketsText: string | null; kbText: string | null; steps: { kind: 'tickets' | 'kb'; step: TraceStep }[] } = {
+    ticketsText: null,
+    kbText: null,
+    steps: [],
+  };
   confirmedDraftIds = new Set<string>();
 
   constructor(

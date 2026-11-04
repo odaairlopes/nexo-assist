@@ -49,7 +49,7 @@ export const SCENARIOS: Scenario[] = [
     id: 'duvida-kb',
     covers: 'História 1 · dúvida respondida sem abrir chamado',
     employee: ANA,
-    messages: ['Qual o horário de atendimento do service desk?'],
+    messages: ['Como eu configuro o e-mail da empresa no meu celular?'],
     checks: [usedTool('search_help_center'), intentIn('question'), noDraftKind('create'), status('agent')],
   },
   {

@@ -115,6 +115,13 @@ describe('finalizeTurn (travas determinísticas)', () => {
     expect(out.reasoning).toMatch(/timeout/);
   });
 
+  it('aplica a transferência pedida mesmo se o modelo falhar depois', () => {
+    const transfer = { kind: 'requested' as const, reason: 'pediu', summary: 'Quer analista', ticketId: null, confidence: null };
+    const out = finalizeTurn(base({ decision: null, error: '429', pendingTransfer: transfer }));
+    expect(out.transfer).toEqual(transfer);
+    expect(out.action).toBe('transferred');
+  });
+
   it('numera as opções quando há pergunta destacada', () => {
     const out = finalizeTurn(
       base({
