@@ -34,7 +34,7 @@ export function App() {
         path="/"
         element={
           <Guard role="employee">
-            <ChatPage />
+            <ChatPage key={user?.email} />
           </Guard>
         }
       />
@@ -50,7 +50,7 @@ export function App() {
         path="/console"
         element={
           <Guard role="analyst">
-            <ConsolePage />
+            <ConsolePage key={user?.email} />
           </Guard>
         }
       />

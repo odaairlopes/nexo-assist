@@ -18,12 +18,16 @@ export function useEventStream(
   url: string | null,
   onEvent: (event: ServerEvent) => void,
   onReconnect?: () => void,
+  /** Conexão recusada (ex.: 404 porque o login mudou em outra aba): revalidar a sessão. */
+  onFailure?: () => void,
 ): StreamStatus {
   const [status, setStatus] = useState<StreamStatus>('connecting');
   const handler = useRef(onEvent);
   const reconnect = useRef(onReconnect);
+  const failure = useRef(onFailure);
   handler.current = onEvent;
   reconnect.current = onReconnect;
+  failure.current = onFailure;
 
   useEffect(() => {
     if (!url) return;
@@ -47,6 +51,7 @@ export function useEventStream(
         // CLOSED = o navegador desistiu (erro HTTP): reconecta manualmente.
         if (source?.readyState === EventSource.CLOSED) {
           source.close();
+          failure.current?.();
           const delay = Math.min(MAX_BACKOFF_MS, 1000 * 2 ** attempts);
           attempts++;
           retryTimer = setTimeout(connect, delay);

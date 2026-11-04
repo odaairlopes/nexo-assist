@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { LogController, type FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { CategorySchema, ImpactSchema, PrioritySchema, TicketTypeSchema } from '@nexo/shared';
 import { ConflictError, NotFoundError, type HelpdeskRepository } from './repository.ts';
@@ -49,7 +49,11 @@ function safeEqual(a: string, b: string): boolean {
 export function buildApp(opts: AppOptions): FastifyInstance {
   const { repo } = opts;
   const random = opts.random ?? Math.random;
-  const app = Fastify({ logger: opts.logger ?? false });
+  const app = Fastify({
+    logger: opts.logger ? { level: process.env.LOG_LEVEL ?? 'info' } : false,
+    // Sem log por requisição (polui o terminal); as falhas simuladas continuam logadas.
+    logController: new LogController({ disableRequestLogging: process.env.LOG_REQUESTS !== 'true' }),
+  });
 
   // Autenticação serviço-a-serviço.
   app.addHook('onRequest', async (req, reply) => {

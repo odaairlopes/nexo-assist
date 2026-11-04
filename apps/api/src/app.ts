@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { LogController, type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
@@ -34,8 +34,18 @@ export interface BuildOptions {
 export async function buildApp(opts: BuildOptions): Promise<{ app: FastifyInstance; conversations: ConversationService; store: Store }> {
   const { config } = opts;
   const app = Fastify({
-    logger: opts.logger === false ? false : { level: config.isProduction ? 'info' : 'info', redact: ['req.headers.cookie'] },
+    logger: opts.logger === false ? false : { level: process.env.LOG_LEVEL ?? 'info', redact: ['req.headers.cookie'] },
+    // O log automático de cada requisição polui o terminal; logamos só o que importa (abaixo).
+    logController: new LogController({ disableRequestLogging: process.env.LOG_REQUESTS !== 'true' }),
     trustProxy: config.isProduction,
+  });
+
+  // Só registra requisição com erro de servidor ou lenta (>2 s, fora o SSE, que fica aberto).
+  app.addHook('onResponse', async (req, reply) => {
+    if (process.env.LOG_REQUESTS === 'true') return;
+    const ms = reply.elapsedTime;
+    if (reply.statusCode >= 500) req.log.error({ url: req.url, status: reply.statusCode, ms: Math.round(ms) }, 'requisição com erro');
+    else if (ms > 2000 && !req.url.endsWith('/events')) req.log.warn({ url: req.url, ms: Math.round(ms) }, 'requisição lenta');
   });
 
   const store = opts.store ?? new Store(config.dbPath);

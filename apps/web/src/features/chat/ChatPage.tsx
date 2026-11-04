@@ -8,6 +8,7 @@ import { useConversationState } from '../../hooks/useConversationState.ts';
 import { useStickToBottom } from '../../hooks/useStickToBottom.ts';
 import { useTypingNotifier, useTypingState } from '../../hooks/useTyping.ts';
 import { useEventStream } from '../../hooks/useEventStream.ts';
+import { useSession } from '../../session/SessionProvider.tsx';
 import { EmployeeShell } from '../shell/EmployeeShell.tsx';
 import { ChatMessages, type ChatHandlers } from './ChatMessages.tsx';
 import s from './ChatPage.module.css';
@@ -63,7 +64,8 @@ export function ChatPage() {
     },
     [apply, onTyping, clear],
   );
-  const stream = useEventStream(conversation ? `/api/conversations/${conversation.id}/events` : null, onEvent, refresh);
+  const { revalidate } = useSession();
+  const stream = useEventStream(conversation ? `/api/conversations/${conversation.id}/events` : null, onEvent, refresh, revalidate);
   const notifyTyping = useTypingNotifier(conversation?.id ?? null);
   const analystTyping = conversation ? typing[conversation.id] : undefined;
 

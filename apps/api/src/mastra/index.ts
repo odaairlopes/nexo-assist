@@ -1,4 +1,5 @@
 import { Mastra } from '@mastra/core/mastra';
+import { InMemoryStore } from '@mastra/core/storage';
 import { createAgentChain, type AgentChain, type NexoAgent } from '../agent/nexo-agent.ts';
 import type { ToolDeps } from '../agent/tools.ts';
 import type { AppConfig } from '../config.ts';
@@ -22,6 +23,10 @@ export const FALLBACK_AGENT = 'nexoAssistReserva';
 export function createNexoMastra(llm: AppConfig['llm'], deps: ToolDeps & { store: Store }) {
   const chain = createAgentChain(llm, deps);
   const mastra = new Mastra({
+    // Decisão: conversas, mensagens e traces vivem no NOSSO SQLite (Store), que
+    // o console também consulta. O Mastra não guarda nada que precise sobreviver
+    // a reinício, então o store em memória é explícito — e sem o aviso de fallback.
+    storage: new InMemoryStore(),
     agents: {
       [PRIMARY_AGENT]: chain.primary.agent,
       ...(chain.fallback ? { [FALLBACK_AGENT]: chain.fallback.agent } : {}),

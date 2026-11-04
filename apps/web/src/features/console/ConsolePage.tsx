@@ -23,7 +23,7 @@ function upsertConversation(list: ConversationView[], c: ConversationView): Conv
 }
 
 export function ConsolePage() {
-  const { user, logout } = useSession();
+  const { user, logout, revalidate } = useSession();
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<ConversationView[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
@@ -74,7 +74,7 @@ export function ConsolePage() {
     },
     [onTyping, clear],
   );
-  useEventStream('/api/console/events', onConsoleEvent, loadList);
+  useEventStream('/api/console/events', onConsoleEvent, loadList, revalidate);
 
   const loadSelected = useCallback(async () => {
     if (!selectedId) return;
@@ -90,7 +90,7 @@ export function ConsolePage() {
     void loadSelected();
   }, [loadSelected]);
 
-  useEventStream(selectedId ? `/api/conversations/${selectedId}/events` : null, apply, loadSelected);
+  useEventStream(selectedId ? `/api/conversations/${selectedId}/events` : null, apply, loadSelected, revalidate);
 
   const waiting = conversations?.filter((c) => c.status === 'waiting_human').length ?? 0;
   const current = state.conversation && state.conversation.id === selectedId ? state.conversation : null;
