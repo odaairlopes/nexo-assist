@@ -16,6 +16,22 @@ function num(name: string, fallback: number): number {
   return n;
 }
 
+/** Variável de chave de cada provedor do model router. */
+const KEY_VARS: Record<string, string[]> = {
+  google: ['GOOGLE_GENERATIVE_AI_API_KEY', 'GOOGLE_API_KEY'],
+  groq: ['GROQ_API_KEY'],
+  openai: ['OPENAI_API_KEY'],
+  anthropic: ['ANTHROPIC_API_KEY'],
+  openrouter: ['OPENROUTER_API_KEY'],
+};
+
+/** O modelo tem chave configurada? (Provedores desconhecidos/locais passam.) */
+export function withKey(model: string | undefined): boolean {
+  if (!model) return false;
+  const vars = KEY_VARS[model.split('/')[0] ?? ''];
+  return !vars || vars.some((v) => Boolean(process.env[v]));
+}
+
 const jwtSecret = required('JWT_SECRET');
 if (jwtSecret.length < 32) throw new Error('JWT_SECRET precisa ter ao menos 32 caracteres');
 
@@ -34,9 +50,14 @@ export const config = {
   llm: {
     /**
      * Modelo no formato do model router do Mastra: "provedor/modelo".
-     * Ex.: openai/gpt-4.1-mini, google/gemini-2.5-flash, anthropic/claude-haiku-4-5.
+     * Padrão gratuito: Gemini 2.5 Flash (cota free do Google AI Studio).
      */
-    model: process.env.LLM_MODEL ?? 'openai/gpt-4.1-mini',
+    model: process.env.LLM_MODEL || 'google/gemini-2.5-flash',
+    /**
+     * Reserva automática quando o principal falha ou estoura a cota
+     * (ex.: groq/openai/gpt-oss-120b, também gratuito). Vazio = sem reserva.
+     */
+    fallbackModel: withKey(process.env.LLM_FALLBACK_MODEL) ? process.env.LLM_FALLBACK_MODEL! : null,
     /** Endpoint compatível com OpenAI (Ollama, LM Studio, vLLM…). Opcional. */
     baseUrl: process.env.LLM_BASE_URL || null,
     apiKey: process.env.LLM_API_KEY || null,

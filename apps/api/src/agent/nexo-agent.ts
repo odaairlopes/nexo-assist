@@ -5,22 +5,47 @@ import { buildInstructions } from './instructions.ts';
 import { buildTools, type ToolDeps } from './tools.ts';
 import { TURN_KEY, type TurnContext } from './turn-context.ts';
 
-export type ModelConfig = string | { id: `${string}/${string}`; url: string; apiKey?: string };
+type ModelId = `${string}/${string}`;
+export type SingleModel = string | { id: ModelId; url: string; apiKey?: string };
 
-export function resolveModel(llm: AppConfig['llm']): ModelConfig {
+function single(model: string, llm: AppConfig['llm']): SingleModel {
   if (llm.baseUrl) {
-    const id = (llm.model.includes('/') ? llm.model : `custom/${llm.model}`) as `${string}/${string}`;
+    const id = (model.includes('/') ? model : `custom/${model}`) as ModelId;
     return { id, url: llm.baseUrl, ...(llm.apiKey ? { apiKey: llm.apiKey } : {}) };
   }
-  return llm.model;
+  return model;
+}
+
+/** Desliga o "thinking" do Gemini 2.5: o agent não precisa e ele custa cota e latência. */
+function providerOptionsFor(model: string) {
+  return model.startsWith('google/gemini-2.5') ? { google: { thinkingConfig: { thinkingBudget: 0 } } } : undefined;
 }
 
 /**
- * Modelos que não aceitam response_format JSON junto com tools (Gemini 2.5,
- * e a maioria dos endpoints locais) recebem o schema no prompt.
+ * Modelo principal + reserva opcional. Com a reserva, o Mastra troca de
+ * provedor sozinho em erro 5xx, rate limit (429) ou timeout — importante com
+ * cotas gratuitas, que são baixas e instáveis.
+ */
+export function resolveModel(llm: AppConfig['llm']) {
+  const chain = [llm.model, ...(llm.fallbackModel ? [llm.fallbackModel] : [])];
+  return chain.map((m, i) => {
+    const providerOptions = providerOptionsFor(m);
+    return {
+      model: single(m, llm),
+      maxRetries: i === 0 ? 1 : 2,
+      ...(providerOptions ? { providerOptions } : {}),
+    };
+  });
+}
+
+/**
+ * Gemini não aceita response_format JSON junto com tools, e endpoints locais
+ * costumam não suportar: nesses casos o schema vai no prompt. Como a reserva
+ * pode assumir no meio da conversa, vale para a cadeia inteira.
  */
 export function needsJsonPromptInjection(llm: AppConfig['llm']): boolean {
-  return Boolean(llm.baseUrl) || llm.model.startsWith('google/');
+  const models = [llm.model, llm.fallbackModel ?? ''];
+  return Boolean(llm.baseUrl) || models.some((m) => m.startsWith('google/'));
 }
 
 export function createNexoAgent(llm: AppConfig['llm'], deps: ToolDeps & { store: Store }) {

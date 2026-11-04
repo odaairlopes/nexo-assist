@@ -10,7 +10,7 @@ Agent de atendimento do service desk de TI da Nexo. O funcionário descreve o pr
 
 ## Como rodar
 
-Requisitos: **Node.js 22.13+** (usa o SQLite nativo do Node, então não precisa de Docker nem de banco) e uma chave de LLM.
+Requisitos: **Node.js 22.13+** (usa o SQLite nativo do Node, então não precisa de Docker nem de banco) e uma chave **gratuita** do Gemini, gerada em [aistudio.google.com/apikey](https://aistudio.google.com/apikey) sem cartão.
 
 ```bash
 npm install
@@ -20,7 +20,11 @@ npm install
 cp .env.example .env
 ```
 
-Edite o `.env` e preencha a chave do provedor escolhido (por padrão, `OPENAI_API_KEY`). Troque também `JWT_SECRET` e `HELPDESK_SERVICE_TOKEN`.
+Edite o `.env`:
+
+- preencha `GOOGLE_GENERATIVE_AI_API_KEY`;
+- opcionalmente, preencha `GROQ_API_KEY`, também gratuita ([console.groq.com/keys](https://console.groq.com/keys)), para ter a reserva automática;
+- troque `JWT_SECRET` e `HELPDESK_SERVICE_TOKEN`.
 
 ```bash
 npm run dev
@@ -45,19 +49,22 @@ Outros comandos:
 
 O `npm run dev` sobe três processos: o **helpdesk** simulado (`:4001`), a **API** com o agent (`:4000`) e a **interface** (`:5173`, que faz proxy de `/api`).
 
-### Modelos suportados
+### Modelo: por que Gemini 2.5 Flash (gratuito) + Groq de reserva
 
-O agent usa o *model router* do Mastra. Para trocar de modelo, basta mudar o `LLM_MODEL`:
+O projeto roda **sem custo**:
 
-```env
-LLM_MODEL=openai/gpt-4.1-mini        # padrão (OPENAI_API_KEY)
-LLM_MODEL=google/gemini-2.5-flash    # GOOGLE_GENERATIVE_AI_API_KEY
-LLM_MODEL=anthropic/claude-haiku-4-5 # ANTHROPIC_API_KEY
-```
+| Papel | Modelo | Por quê |
+| --- | --- | --- |
+| Principal | `google/gemini-2.5-flash` | Cota gratuita no Google AI Studio, sem cartão. Faz bem *tool calling* e JSON, e é rápido. O "thinking" fica desligado (`thinkingBudget: 0`): o agent não precisa dele, e desligar economiza cota e latência. |
+| Reserva | `groq/openai/gpt-oss-120b` | Também gratuito (Groq). Assume sozinho quando o Gemini responde 429 (cota estourada), erro 5xx ou timeout, usando os fallbacks de modelo do Mastra. |
 
-**Por que `gpt-4.1-mini` como padrão:** cada turno precisa de *tool calling* e de saída estruturada (JSON Schema estrito) na mesma chamada, e esse modelo faz as duas coisas de forma confiável, com latência baixa e custo por token baixo. O agent não precisa de raciocínio profundo, porque as regras pesadas (prioridade, prazo, duplicidade) são calculadas por código. Assim, um modelo pequeno e rápido é a escolha mais eficiente. O Gemini 2.5 Flash é uma boa alternativa (tem cota gratuita). Para ele, o código ativa sozinho o `jsonPromptInjection`, porque o Gemini não aceita `response_format` junto com tools.
+**Por que um modelo pequeno dá conta:** o agent não precisa de raciocínio profundo. As regras pesadas (prioridade, prazo, duplicidade, privacidade) são calculadas por código, e o modelo só interpreta a mensagem e escolhe a ação. Por isso, um modelo rápido e barato é a escolha mais eficiente.
 
-Também dá para usar um endpoint local compatível com OpenAI (`LLM_BASE_URL=http://localhost:11434/v1`, Ollama). Nos meus testes, modelos de 7–8B não combinaram bem tool calling com saída estruturada: o agent caiu na resposta de contingência, que é o comportamento esperado quando o modelo falha. Por isso, o recomendado é um modelo de nuvem.
+**Detalhe técnico:** o Gemini não aceita `response_format` junto com tools, então o código ativa sozinho o `jsonPromptInjection` do Mastra. Nesse modo, o schema da decisão vai no prompt e é validado com Zod na saída.
+
+**Trade-off da cota gratuita:** o próprio Google descreve o free tier como *best effort*, com limites baixos (por projeto, por modelo e por dia) que podem mudar sem aviso. É por isso que existe a reserva. Além disso, no plano gratuito o Google pode usar os dados enviados para melhorar os produtos. Isso é aceitável para um desafio com dados fictícios, mas não para dados reais da empresa: em produção, o plano pago muda isso e é uma troca de uma linha (`LLM_MODEL`).
+
+Outros provedores funcionam trocando o `LLM_MODEL` (ex.: `openai/gpt-4.1-mini` + `OPENAI_API_KEY`). Também dá para usar um endpoint local compatível com OpenAI (`LLM_BASE_URL=http://localhost:11434/v1`, Ollama). Nos meus testes, modelos locais de 7–8B não conseguiram combinar tool calling com saída estruturada: o agent caiu na resposta de contingência, que é o comportamento esperado quando o modelo falha.
 
 ---
 
