@@ -8,6 +8,49 @@ Agent de atendimento do service desk de TI da Nexo. O funcionário descreve o pr
 
 ---
 
+## Requisitos do PRD → onde estão
+
+### Requisitos técnicos
+
+| Tema | Requisito | Como foi atendido |
+| --- | --- | --- |
+| Linguagem | TypeScript com tipagem estrita | `strict`, `noUncheckedIndexedAccess`, zero `any` explícito; contratos compartilhados em `packages/shared` |
+| Agent | **Mastra** (preferência) ou LangGraph.js | **Mastra** (`@mastra/core`): `Agent` em `apps/api/src/agent/nexo-agent.ts`, `createTool` em `tools.ts`, `RequestContext` para a identidade do funcionário e instância `new Mastra({ agents })` em `apps/api/src/mastra/index.ts` |
+| Modelo | Qualquer provedor; explicar a escolha | Groq gratuito: `gpt-oss-120b` + reserva `qwen3.8-27b` (ver [Modelo](#modelo-gratuito-rápido-e-com-reserva-automática)) |
+| Interface | Seguir o protótipo (Next.js ou React) | React 18 + Vite; tokens, sombras e tipografia extraídos do arquivo do protótipo |
+| Dados | Serviço de chamados simulado, separado do agent | `apps/helpdesk`: processo próprio, acessado só por HTTP com token de serviço |
+| Persistência | Conversas, chamados e estado sobrevivem a reinício | SQLite em `./data` (API e helpdesk) |
+| Execução | Poucos comandos + `.env.example` | `npm install` → `npm run dev` |
+
+### O que construir
+
+| # | Item | Onde |
+| --- | --- | --- |
+| 1 | Login (Tela 1) | `apps/web/src/features/auth` |
+| 2 | Chat: tempo real, cards, seleção, rascunho, opções rápidas, limite de 30 | `apps/web/src/features/chat` (SSE em `apps/api/src/http/sse.ts`) |
+| 3 | Agent decide seguindo o Anexo A | `apps/api/src/agent` + regras em `packages/shared/src/rules` |
+| 4 | Serviço de chamados: consultar, criar, atualizar, transferir | `apps/helpdesk/src/app.ts` |
+| 5 | Transferência: aguardando atendente, agent para | `ConversationService.transfer` / `postUserMessage` |
+| 6 | Console: filtros, histórico, assumir, devolver, encerrar, chamados | `apps/web/src/features/console` |
+| 7 | Visibilidade das decisões | Linha de ações + painel **Por quê?** (`components/decision`) |
+
+### Anexo A (regras do service desk)
+
+| Regra | Onde é garantida |
+| --- | --- |
+| Tipos INC/REQ e 6 categorias | Schemas em `packages/shared/src/domain.ts` |
+| Chamado completo + rascunho antes de criar | `draft_new_ticket` (rascunho) → criação só em `ConversationService.executeDraft` após confirmação |
+| Sem duplicidade; reabrir resolvidos há até 7 dias | `ticketSimilarity` bloqueia na tool; `canReopen` no helpdesk |
+| Transferência (pedido, crítico, vencido, sem segurança) + resumo | `transfer_to_analyst`, travas em `guardrails.ts` (confiança < 50%, crítico → N2) |
+| Privacidade | Identidade via `RequestContext`; helpdesk responde 404 para chamado de outra pessoa |
+| Escopo só TI | Prompt + cenário `fora-do-escopo` no eval |
+| Prioridade e prazos (horas úteis) | `classifyPriority` e `computeDueDate` (testados) |
+
+### Entregáveis do README
+Como rodar · Arquitetura · Como o agent decide · Como garanti a qualidade · Trade-offs · O que faria com mais tempo: seções abaixo. Deploy (diferencial opcional) não foi feito.
+
+---
+
 ## Como rodar
 
 Requisitos: **Node.js 22.13+** (usa o SQLite nativo do Node, então não precisa de Docker nem de banco) e uma chave **gratuita** do Groq, gerada em [console.groq.com/keys](https://console.groq.com/keys) sem cartão.
@@ -206,6 +249,7 @@ Cada mensagem do funcionário vira um **turno**:
 
 ```
 apps/api/src
+  mastra/       instância Mastra com os agents registrados (principal e reserva)
   agent/        nexo-agent, tools, instruções, schema da decisão, travas, executor do turno
   clients/      HelpdeskClient (timeout, retry, idempotência)
   domain/       ConversationService (estado, rascunhos, transferência), erros
