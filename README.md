@@ -74,11 +74,17 @@ npm run dev
 
 Abra **http://localhost:5173**. Qualquer senha é aceita para as contas do seed:
 
-| Conta                     | Perfil                   | Para testar                                        |
-| ------------------------- | ------------------------ | -------------------------------------------------- |
-| `ana.souza@nexo.com.br`   | Funcionária (Windows 11) | Chamado vencido, resolvido há 4 dias, VPN erro 809 |
-| `diego.ramos@nexo.com.br` | Funcionário (Windows 10) | Isolamento: não vê os chamados da Ana              |
-| `rafael.lima@nexo.com.br` | Analista N2              | Console do analista                                |
+| Conta | Perfil | Para testar |
+| --- | --- | --- |
+| `ana.souza@nexo.com.br` | Funcionária (Windows 11) | Sem conversa. Chamado vencido, resolvido há 4 dias, VPN erro 809 |
+| `marcos.vieira@nexo.com.br` | Funcionário (Windows 11) | Sem conversa. Chat do zero |
+| `diego.ramos@nexo.com.br` | Funcionário (Windows 10) | Conversa em andamento; não vê os chamados da Ana |
+| `rafael.lima@nexo.com.br` | Analista N2 | Console do analista |
+| `julia.costa@nexo.com.br` | Analista N1 | Console; está atendendo a Juliana |
+
+Os dados de exemplo têm **14 funcionários** (11 funcionários e 3 analistas), **10 artigos** na central de ajuda, **22 chamados** em todas as situações (aberto, vencido, aguardando o funcionário, aprovado, crítico, resolvido há pouco e há muito tempo, encerrado) e **8 conversas** no console, nos estados do protótipo.
+
+**Passo a passo para testar cada história do PRD: [docs/ROTEIRO_DE_TESTE.md](docs/ROTEIRO_DE_TESTE.md).**
 
 Outros comandos:
 

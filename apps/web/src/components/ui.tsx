@@ -2,18 +2,18 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { initials, type Tone } from '@nexo/shared';
 import s from './ui.module.css';
 
+/**
+ * Símbolo da Nexo (arquivo oficial nexo_logo.svg). O SVG original tem
+ * viewBox de 20×20, mas o desenho vai até x≈26 e ficava cortado; aqui o
+ * enquadramento é o do próprio desenho (24,4 × 20,6), centralizado.
+ */
+const NEXO_MARK_PATH =
+  'M21.763 .245l-3.374 1.687c-.623 .308-.973 .903-.973 1.631v6.293l-11.193-9.429c-.623-.469-1.372-.553-2.03-.245l-3.185 1.631c-.651 .322-1.008 .924-1.008 1.673v15.218c0 1.477 1.526 2.289 2.716 1.785l3.073-1.617c.693-.322 1.057-.952 1.057-1.722v-7.7l11.732 10.591c.602 .546 1.421 .679 2.086 .364l2.786-1.505c.602-.315 .938-.931 .938-1.68v-15.288c0-1.463-1.505-2.275-2.625-1.687z';
+
 export function NexoMark({ size = 20, light = false }: { size?: number; light?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-      <rect width="24" height="24" rx="6" fill={light ? '#ffffff' : '#037AF6'} />
-      <path
-        d="M6.5 17V7l11 10V7"
-        fill="none"
-        stroke={light ? '#1B2431' : '#ffffff'}
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width={size} height={size} viewBox="0 -1.9 24.4 24.4" aria-hidden="true" focusable="false">
+      <path d={NEXO_MARK_PATH} fill={light ? '#FFFFFF' : '#037AF6'} />
     </svg>
   );
 }

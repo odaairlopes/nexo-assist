@@ -8,8 +8,10 @@ import s from './LoginPage.module.css';
 
 const DEMO_ACCOUNTS = [
   { email: 'ana.souza@nexo.com.br', label: 'Ana Souza · funcionária' },
+  { email: 'marcos.vieira@nexo.com.br', label: 'Marcos Vieira · funcionário' },
   { email: 'diego.ramos@nexo.com.br', label: 'Diego Ramos · funcionário' },
   { email: 'rafael.lima@nexo.com.br', label: 'Rafael Lima · analista N2' },
+  { email: 'julia.costa@nexo.com.br', label: 'Júlia Costa · analista N1' },
 ];
 
 export function LoginPage() {

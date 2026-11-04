@@ -131,7 +131,20 @@ export function ChatPage() {
   const composerDisabled = !conversation || closed || limitReached;
 
   return (
-    <EmployeeShell title="Atendimento" status={<StatusPill conversation={conversation} stream={stream} />}>
+    <EmployeeShell
+      title="Atendimento"
+      status={
+        <>
+          <StatusPill conversation={conversation} stream={stream} />
+          {/* Recomeçar a qualquer momento, exceto com um analista atendendo. */}
+          {conversation?.status === 'agent' && messages.length > 0 && (
+            <Button variant="ghost" icon={<RotateCcw size={14} />} onClick={() => void startNew()}>
+              Nova conversa
+            </Button>
+          )}
+        </>
+      }
+    >
       <div className={s.chat}>
         <div className={s.messages} ref={scrollRef} aria-live="polite">
           <div className={s.messagesInner}>
