@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Info, KeyRound, ShieldCheck } from 'lucide-react';
-import { Button } from '../../components/ui.tsx';
-import { useSession } from '../../session/SessionProvider.tsx';
-import { EmployeeShell } from '../shell/EmployeeShell.tsx';
-import s from './ProfilePage.module.css';
+import { useState } from "react";
+import { KeyRound, Lock, Mail, RotateCcwKey } from "lucide-react";
+import { Button } from "../../components/ui.tsx";
+import { useSession } from "../../session/SessionProvider.tsx";
+import { EmployeeShell } from "../shell/EmployeeShell.tsx";
+import s from "./ProfilePage.module.css";
 
 export function ProfilePage() {
   const { user } = useSession();
@@ -32,7 +32,7 @@ export function ProfilePage() {
               <span className={s.label}>E-mail corporativo</span>
               <span className={s.value}>{user.email}</span>
               <span className={s.note}>
-                <ShieldCheck size={13} aria-hidden="true" /> Gerenciado pela TI
+                <Lock size={13} aria-hidden="true" /> Gerenciado pela TI
               </span>
             </div>
           </section>
@@ -46,12 +46,16 @@ export function ProfilePage() {
                 <strong>Senha</strong>
                 <span>Senha da rede Nexo (vale para e-mail, VPN e Wi-Fi)</span>
               </div>
-              <Button icon={<KeyRound size={15} />} onClick={() => setSent(true)} disabled={sent}>
-                {sent ? 'Link enviado' : 'Redefinir senha'}
+              <Button
+                icon={<RotateCcwKey size={15} />}
+                onClick={() => setSent(true)}
+                disabled={sent}
+              >
+                {sent ? "Link enviado" : "Redefinir senha"}
               </Button>
             </div>
             <div className={s.helper}>
-              <Info size={14} aria-hidden="true" />
+              <Mail size={14} aria-hidden="true" />
               {sent
                 ? `Enviamos o link de redefinição para ${user.email} (simulado neste desafio).`
                 : `Enviaremos um link de redefinição para ${user.email}.`}
