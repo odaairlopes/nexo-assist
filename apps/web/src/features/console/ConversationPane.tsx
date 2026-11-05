@@ -15,8 +15,7 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  PanelRightClose,
-  PanelRightOpen,
+  EllipsisVertical,
   Search,
   SendHorizontal,
   Undo2,
@@ -43,7 +42,6 @@ import {
 import type { LiveTurn } from "../../hooks/useConversationState.ts";
 import { useStickToBottom } from "../../hooks/useStickToBottom.ts";
 import { useTypingNotifier } from "../../hooks/useTyping.ts";
-import { HeaderMenu, type MenuAction } from "./HeaderMenu.tsx";
 import { containsQuery, highlight } from "./highlight.tsx";
 import s from "./Console.module.css";
 
@@ -209,20 +207,6 @@ export function ConversationPane({
     act("return", () => consoleApi.giveBack(conversation.id));
   const closeConversation = () =>
     act("close", () => consoleApi.close(conversation.id));
-  const menuActions: MenuAction[] = [
-    {
-      id: "history",
-      label: historyOpen
-        ? `Esconder chamados de ${first}`
-        : `Ver chamados de ${first}`,
-      icon: historyOpen ? (
-        <PanelRightClose size={16} />
-      ) : (
-        <PanelRightOpen size={16} />
-      ),
-      onSelect: onToggleHistory,
-    },
-  ];
 
   // Trocou de conversa: começa no fim. O resto (mensagens, digitando…) o hook acompanha.
   useEffect(() => {
@@ -358,10 +342,18 @@ export function ConversationPane({
         >
           <Search size={18} />
         </button>
-        <HeaderMenu
-          actions={menuActions}
-          label={`Opções da conversa com ${first}`}
-        />
+        <button
+          type="button"
+          className={s.iconButton}
+          onClick={onToggleHistory}
+          aria-pressed={historyOpen}
+          aria-label={
+            historyOpen ? `Esconder chamados de ${first}` : `Ver chamados de ${first}`
+          }
+          title={`Chamados de ${first}`}
+        >
+          <EllipsisVertical size={18} />
+        </button>
       </header>
 
       {searchOpen && (

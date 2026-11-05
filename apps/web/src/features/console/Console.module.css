@@ -1047,56 +1047,6 @@
   }
 }
 
-/* ---------- Menu ⋮ ---------- */
-.menuWrap {
-  position: relative;
-}
-.menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  min-width: 232px;
-  padding: 6px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-lg);
-  background: var(--paper);
-  box-shadow: 0 1px 2px #1b24310d, 0 12px 32px #1b24311f;
-  animation: global(fade-in) var(--dur-fast) var(--ease-out) both;
-}
-.menuItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 38px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--ink);
-  font-size: 13.5px;
-  font-weight: 500;
-  text-align: left;
-  white-space: nowrap;
-}
-.menuItem svg {
-  color: var(--ink-3);
-}
-.menuItem:hover:not(:disabled),
-.menuItem:focus-visible {
-  background: var(--desk);
-  outline: 0;
-}
-.menuItem[data-tone="danger"],
-.menuItem[data-tone="danger"] svg {
-  color: var(--danger-text);
-}
-.menuItem:disabled {
-  opacity: 0.5;
-}
-
 /* ---------- Busca na conversa ---------- */
 .convSearch {
   display: flex;
