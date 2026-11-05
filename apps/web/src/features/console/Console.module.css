@@ -1111,17 +1111,15 @@
   box-shadow: 0 0 0 2px var(--warning);
 }
 
-/* Cabeçalho apertado: nome e área não quebram; ações com texto vão para o menu ⋮. */
+/* Cabeçalho apertado: nome e área encurtam com reticências, os botões não. */
 .who strong,
 .who span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-@media (max-width: 1440px) {
-  .headerAction {
-    display: none;
-  }
+.headerAction {
+  flex-shrink: 0;
 }
 
 /* "online · " no cabeçalho da conversa. */

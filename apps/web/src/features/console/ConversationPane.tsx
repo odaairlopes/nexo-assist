@@ -222,31 +222,6 @@ export function ConversationPane({
       ),
       onSelect: onToggleHistory,
     },
-    {
-      id: "search",
-      label: "Buscar na conversa",
-      icon: <Search size={16} />,
-      onSelect: openSearch,
-    },
-    ...(mine
-      ? [
-          {
-            id: "return",
-            label: "Devolver ao agent",
-            icon: <Bot size={16} />,
-            onSelect: () => void giveBack(),
-            disabled: busy !== null,
-          },
-          {
-            id: "close",
-            label: "Encerrar atendimento",
-            icon: <CircleCheckBig size={16} />,
-            onSelect: () => void closeConversation(),
-            tone: "danger" as const,
-            disabled: busy !== null,
-          },
-        ]
-      : []),
   ];
 
   // Trocou de conversa: começa no fim. O resto (mensagens, digitando…) o hook acompanha.

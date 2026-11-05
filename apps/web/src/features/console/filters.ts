@@ -2,12 +2,11 @@ import type { ConversationView, SessionUser } from '@nexo/shared';
 
 export type Filter = 'all' | 'needs_you' | 'agent' | 'mine';
 
-/** Rótulo e explicação de cada filtro (a explicação aparece embaixo das abas). */
-export const FILTERS: { id: Filter; label: string; hint: string }[] = [
-  { id: 'all', label: 'Todas', hint: 'Todas as conversas abertas e a última de cada pessoa.' },
-  { id: 'needs_you', label: 'Para você', hint: 'Transferidas pelo agent, esperando um analista assumir.' },
-  { id: 'agent', label: 'Com o agent', hint: 'O agent está atendendo. Você pode assumir a qualquer momento.' },
-  { id: 'mine', label: 'Minhas', hint: 'Conversas que você assumiu e ainda não encerrou.' },
+export const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'all', label: 'Todas' },
+  { id: 'needs_you', label: 'Para você' },
+  { id: 'agent', label: 'Com o agent' },
+  { id: 'mine', label: 'Minhas' },
 ];
 
 /**
