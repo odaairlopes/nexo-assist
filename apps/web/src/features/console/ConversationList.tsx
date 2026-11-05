@@ -1,9 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { CheckCheck, Search } from 'lucide-react';
+import { CheckCheck, Search, X } from 'lucide-react';
 import { formatLocalTime, isSameLocalDay, type ConversationView, type SessionUser } from '@nexo/shared';
 import { Avatar, Dot, NexoMark, Pill } from '../../components/ui.tsx';
 import type { TypingInfo } from '../../hooks/useTyping.ts';
-import { latestPerEmployee, matchesFilter, type Filter } from './filters.ts';
+import { byRecentActivity, FILTERS, lastActivity, latestPerEmployee, matchesFilter, matchesQuery, type Filter } from './filters.ts';
 import s from './Console.module.css';
 
 function timeLabel(iso: string): string {
@@ -92,27 +92,16 @@ export function ConversationList({
     return c;
   }, [current, me]);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return current
-      .filter((c) => matchesFilter(c, filter, me))
-      .filter(
-        (c) =>
-          !q ||
-          c.employee.name.toLowerCase().includes(q) ||
-          (c.ticketRef ?? '').toLowerCase().includes(q) ||
-          (c.lastMessage?.content ?? '').toLowerCase().includes(q),
-      )
-      // Quem espera atendente vem primeiro; depois, as mais recentes.
-      .sort((a, b) => Number(b.status === 'waiting_human') - Number(a.status === 'waiting_human') || b.updatedAt.localeCompare(a.updatedAt));
-  }, [current, filter, query, me]);
-
-  const filters: { id: Filter; label: string }[] = [
-    { id: 'all', label: 'Todas' },
-    { id: 'needs_you', label: 'Para você' },
-    { id: 'agent', label: 'Com o agent' },
-    { id: 'mine', label: 'Minhas' },
-  ];
+  const searching = query.trim().length > 0;
+  const visible = useMemo(
+    () =>
+      current
+        // Buscando, procura em todas as conversas; sem busca, vale a aba escolhida.
+        .filter((c) => (searching ? matchesQuery(c, query) : matchesFilter(c, filter, me)))
+        .sort(byRecentActivity),
+    [current, filter, query, searching, me],
+  );
+  const activeHint = FILTERS.find((f) => f.id === filter)?.hint ?? '';
 
   return (
     <section className={s.list} aria-label="Conversas">
@@ -127,23 +116,66 @@ export function ConversationList({
           <Pill tone="success">Disponível</Pill>
           {account}
         </div>
-        <label className={s.search}>
+        <div className={s.search}>
           <Search size={15} aria-hidden="true" />
-          <span className="sr-only">Pesquisar</span>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Pesquisar conversa ou chamado" />
-        </label>
-        <div className={s.filters} role="tablist" aria-label="Filtros">
-          {filters.map((f) => (
-            <button key={f.id} type="button" role="tab" aria-selected={filter === f.id} className={s.filter} onClick={() => setFilter(f.id)}>
-              {f.label}
-              {f.id !== 'all' && <strong>{counts[f.id]}</strong>}
+          <label htmlFor="console-search" className="sr-only">
+            Pesquisar conversas
+          </label>
+          <input
+            id="console-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Escape' && setQuery('')}
+            placeholder="Nome, área, chamado ou mensagem"
+            autoComplete="off"
+          />
+          {searching && (
+            <button type="button" className={s.searchClear} onClick={() => setQuery('')} aria-label="Limpar busca">
+              <X size={14} />
             </button>
-          ))}
+          )}
         </div>
+        {!searching && (
+          <div className={s.filters} role="tablist" aria-label="Filtros">
+            {FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                role="tab"
+                aria-selected={filter === f.id}
+                className={s.filter}
+                onClick={() => setFilter(f.id)}
+                title={f.hint}
+              >
+                {f.label}
+                <strong>{counts[f.id]}</strong>
+              </button>
+            ))}
+          </div>
+        )}
+        <p className={s.filterHint} aria-live="polite">
+          {searching
+            ? `${visible.length} ${visible.length === 1 ? 'resultado' : 'resultados'} em todas as conversas`
+            : activeHint}
+        </p>
       </header>
 
       <ul className={s.items}>
-        {visible.length === 0 && <li className={s.emptyList}>Nenhuma conversa neste filtro.</li>}
+        {visible.length === 0 && (
+          <li className={s.emptyList}>
+            {searching ? (
+              <>
+                Nada encontrado para “{query.trim()}”.
+                <button type="button" className={s.linkButton} onClick={() => setQuery('')}>
+                  Limpar busca
+                </button>
+              </>
+            ) : (
+              'Nenhuma conversa neste filtro.'
+            )}
+          </li>
+        )}
         {visible.map((c) => {
           const unread = c.pendingUserMessages;
           const typingNow = typing[c.id]?.role === 'user';
@@ -165,7 +197,7 @@ export function ConversationList({
                 <span className={s.itemText}>
                   <span className={s.itemTop}>
                     <strong data-unread={unread > 0}>{c.employee.name}</strong>
-                    <span data-unread={unread > 0}>{timeLabel(c.updatedAt)}</span>
+                    <span data-unread={unread > 0}>{timeLabel(lastActivity(c))}</span>
                   </span>
                   <span className={s.itemPreview}>
                     {typingNow ? (
