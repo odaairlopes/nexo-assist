@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeftRight, ChevronRight, History, UserCheck, X } from 'lucide-react';
+import { ArrowLeftRight, ArrowUpRight, ChevronRight, History, UserCheck, X } from 'lucide-react';
 import {
   ACTIVE_STATUSES,
   formatLocalDay,
@@ -13,6 +13,7 @@ import {
 import { ApiError } from '../../api/client.ts';
 import { consoleApi } from '../../api/endpoints.ts';
 import { Dot, ErrorBanner, Spinner } from '../../components/ui.tsx';
+import { TicketsDialog } from './TicketsDialog.tsx';
 import s from './Console.module.css';
 
 /** Última movimentação do chamado, em uma linha (o texto completo fica no histórico do legado). */
@@ -55,6 +56,7 @@ export function TicketHistory({
   const [tickets, setTickets] = useState<TicketView[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const first = conversation.employee.name.split(' ')[0];
 
   const load = useCallback(async () => {
@@ -158,7 +160,19 @@ export function TicketHistory({
           </section>
         )}
       </div>
+
+      {tickets && tickets.length > 0 && (
+        <footer className={s.historyFooter}>
+          <button type="button" className={s.seeAll} onClick={() => setShowAll(true)} aria-haspopup="dialog">
+            Ver todos os chamados de {first}
+            <ArrowUpRight size={15} aria-hidden="true" />
+          </button>
+        </footer>
+      )}
       </aside>
+      {tickets && (
+        <TicketsDialog conversation={conversation} tickets={tickets} open={showAll} onClose={() => setShowAll(false)} />
+      )}
     </>
   );
 }
