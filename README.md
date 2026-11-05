@@ -12,41 +12,42 @@ Agent de atendimento do service desk de TI da Nexo. O funcionário descreve o pr
 
 ### Requisitos técnicos
 
-| Tema | Requisito | Como foi atendido |
-| --- | --- | --- |
-| Linguagem | TypeScript com tipagem estrita | `strict`, `noUncheckedIndexedAccess`, zero `any` explícito; contratos compartilhados em `packages/shared` |
-| Agent | **Mastra** (preferência) ou LangGraph.js | **Mastra** (`@mastra/core`): `Agent` em `apps/api/src/agent/nexo-agent.ts`, `createTool` em `tools.ts`, `RequestContext` para a identidade do funcionário e instância `new Mastra({ agents })` em `apps/api/src/mastra/index.ts` |
-| Modelo | Qualquer provedor; explicar a escolha | Groq gratuito: `gpt-oss-120b` + reserva `qwen3.8-27b` (ver [Modelo](#modelo-gratuito-rápido-e-com-reserva-automática)) |
-| Interface | Seguir o protótipo (Next.js ou React) | React 18 + Vite; tokens, sombras e tipografia extraídos do arquivo do protótipo |
-| Dados | Serviço de chamados simulado, separado do agent | `apps/helpdesk`: processo próprio, acessado só por HTTP com token de serviço |
-| Persistência | Conversas, chamados e estado sobrevivem a reinício | SQLite em `./data` (API e helpdesk) |
-| Execução | Poucos comandos + `.env.example` | `npm install` → `npm run dev` |
+| Tema         | Requisito                                          | Como foi atendido                                                                                                                                                                                                                |
+| ------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Linguagem    | TypeScript com tipagem estrita                     | `strict`, `noUncheckedIndexedAccess`, zero `any` explícito; contratos compartilhados em `packages/shared`                                                                                                                        |
+| Agent        | **Mastra** (preferência) ou LangGraph.js           | **Mastra** (`@mastra/core`): `Agent` em `apps/api/src/agent/nexo-agent.ts`, `createTool` em `tools.ts`, `RequestContext` para a identidade do funcionário e instância `new Mastra({ agents })` em `apps/api/src/mastra/index.ts` |
+| Modelo       | Qualquer provedor; explicar a escolha              | Groq gratuito: `gpt-oss-120b` + reserva `qwen3.8-27b` (ver [Modelo](#modelo-gratuito-rápido-e-com-reserva-automática))                                                                                                           |
+| Interface    | Seguir o protótipo (Next.js ou React)              | React 18 + Vite; tokens, sombras e tipografia extraídos do arquivo do protótipo                                                                                                                                                  |
+| Dados        | Serviço de chamados simulado, separado do agent    | `apps/helpdesk`: processo próprio, acessado só por HTTP com token de serviço                                                                                                                                                     |
+| Persistência | Conversas, chamados e estado sobrevivem a reinício | SQLite em `./data` (API e helpdesk)                                                                                                                                                                                              |
+| Execução     | Poucos comandos + `.env.example`                   | `npm install` → `npm run dev`                                                                                                                                                                                                    |
 
 ### O que construir
 
-| # | Item | Onde |
-| --- | --- | --- |
-| 1 | Login (Tela 1) | `apps/web/src/features/auth` |
-| 2 | Chat: tempo real, cards, seleção, rascunho, opções rápidas, limite de 30 | `apps/web/src/features/chat` (SSE em `apps/api/src/http/sse.ts`) |
-| 3 | Agent decide seguindo o Anexo A | `apps/api/src/agent` + regras em `packages/shared/src/rules` |
-| 4 | Serviço de chamados: consultar, criar, atualizar, transferir | `apps/helpdesk/src/app.ts` |
-| 5 | Transferência: aguardando atendente, agent para | `ConversationService.transfer` / `postUserMessage` |
-| 6 | Console: filtros, histórico, assumir, devolver, encerrar, chamados | `apps/web/src/features/console` |
-| 7 | Visibilidade das decisões | Linha de ações + painel **Por quê?** (`components/decision`) |
+| #   | Item                                                                     | Onde                                                             |
+| --- | ------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| 1   | Login (Tela 1)                                                           | `apps/web/src/features/auth`                                     |
+| 2   | Chat: tempo real, cards, seleção, rascunho, opções rápidas, limite de 30 | `apps/web/src/features/chat` (SSE em `apps/api/src/http/sse.ts`) |
+| 3   | Agent decide seguindo o Anexo A                                          | `apps/api/src/agent` + regras em `packages/shared/src/rules`     |
+| 4   | Serviço de chamados: consultar, criar, atualizar, transferir             | `apps/helpdesk/src/app.ts`                                       |
+| 5   | Transferência: aguardando atendente, agent para                          | `ConversationService.transfer` / `postUserMessage`               |
+| 6   | Console: filtros, histórico, assumir, devolver, encerrar, chamados       | `apps/web/src/features/console`                                  |
+| 7   | Visibilidade das decisões                                                | Linha de ações + painel **Por quê?** (`components/decision`)     |
 
 ### Anexo A (regras do service desk)
 
-| Regra | Onde é garantida |
-| --- | --- |
-| Tipos INC/REQ e 6 categorias | Schemas em `packages/shared/src/domain.ts` |
-| Chamado completo + rascunho antes de criar | `draft_new_ticket` (rascunho) → criação só em `ConversationService.executeDraft` após confirmação |
-| Sem duplicidade; reabrir resolvidos há até 7 dias | `ticketSimilarity` bloqueia na tool; `canReopen` no helpdesk |
-| Transferência (pedido, crítico, vencido, sem segurança) + resumo | `transfer_to_analyst`, travas em `guardrails.ts` (confiança < 50%, crítico → N2) |
-| Privacidade | Identidade via `RequestContext`; helpdesk responde 404 para chamado de outra pessoa |
-| Escopo só TI | Prompt + cenário `fora-do-escopo` no eval |
-| Prioridade e prazos (horas úteis) | `classifyPriority` e `computeDueDate` (testados) |
+| Regra                                                            | Onde é garantida                                                                                  |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Tipos INC/REQ e 6 categorias                                     | Schemas em `packages/shared/src/domain.ts`                                                        |
+| Chamado completo + rascunho antes de criar                       | `draft_new_ticket` (rascunho) → criação só em `ConversationService.executeDraft` após confirmação |
+| Sem duplicidade; reabrir resolvidos há até 7 dias                | `ticketSimilarity` bloqueia na tool; `canReopen` no helpdesk                                      |
+| Transferência (pedido, crítico, vencido, sem segurança) + resumo | `transfer_to_analyst`, travas em `guardrails.ts` (confiança < 50%, crítico → N2)                  |
+| Privacidade                                                      | Identidade via `RequestContext`; helpdesk responde 404 para chamado de outra pessoa               |
+| Escopo só TI                                                     | Prompt + cenário `fora-do-escopo` no eval                                                         |
+| Prioridade e prazos (horas úteis)                                | `classifyPriority` e `computeDueDate` (testados)                                                  |
 
 ### Entregáveis do README
+
 Como rodar · Arquitetura · Como o agent decide · Como garanti a qualidade · Trade-offs · O que faria com mais tempo: seções abaixo. Deploy (diferencial opcional) não foi feito.
 
 ---
@@ -74,13 +75,13 @@ npm run dev
 
 Abra **http://localhost:5173**. Qualquer senha é aceita para as contas do seed:
 
-| Conta | Perfil | Para testar |
-| --- | --- | --- |
-| `ana.souza@nexo.com.br` | Funcionária (Windows 11) | Sem conversa. Chamado vencido, resolvido há 4 dias, VPN erro 809 |
-| `marcos.vieira@nexo.com.br` | Funcionário (Windows 11) | Sem conversa. Chat do zero |
-| `diego.ramos@nexo.com.br` | Funcionário (Windows 10) | Conversa em andamento; não vê os chamados da Ana |
-| `rafael.lima@nexo.com.br` | Analista N2 | Console do analista |
-| `julia.costa@nexo.com.br` | Analista N1 | Console; está atendendo a Juliana |
+| Conta                       | Perfil                   | Para testar                                                      |
+| --------------------------- | ------------------------ | ---------------------------------------------------------------- |
+| `ana.souza@nexo.com.br`     | Funcionária (Windows 11) | Sem conversa. Chamado vencido, resolvido há 4 dias, VPN erro 809 |
+| `marcos.vieira@nexo.com.br` | Funcionário (Windows 11) | Sem conversa. Chat do zero                                       |
+| `diego.ramos@nexo.com.br`   | Funcionário (Windows 10) | Conversa em andamento; não vê os chamados da Ana                 |
+| `rafael.lima@nexo.com.br`   | Analista N2              | Console do analista                                              |
+| `julia.costa@nexo.com.br`   | Analista N1              | Console; está atendendo a Juliana                                |
 
 Os dados de exemplo têm **14 funcionários** (11 funcionários e 3 analistas), **10 artigos** na central de ajuda, **22 chamados** em todas as situações (aberto, vencido, aguardando o funcionário, aprovado, crítico, resolvido há pouco e há muito tempo, encerrado) e **8 conversas** no console, nos estados do protótipo.
 
@@ -238,16 +239,6 @@ Cada mensagem do funcionário vira um **turno**:
 - **Duplicidade por similaridade lexical + categoria:** é barata e explicável (o score aparece no trace), mas sinônimos fortes escapam. O modelo também vê os chamados abertos e costuma pegar esses casos.
 - **Horário útil sem feriados**, em fuso fixo de Brasília (o Brasil não tem horário de verão desde 2019).
 - **Uma instância**, com bus em memória e SQLite. A troca para Redis e Postgres não muda a interface das camadas.
-
-## O que faria com mais tempo
-
-- Rodar o eval na CI a cada mudança de prompt ou modelo, com LLM-as-judge para o tom das respostas, e acompanhar a taxa de acerto por cenário.
-- Observabilidade: OpenTelemetry nos turnos (o Mastra já emite spans), dashboards de custo, latência e taxa de transferência, e Sentry no front e no back.
-- Busca semântica na central de ajuda e sugestão de artigo novo a partir de chamados repetidos.
-- Calendário de feriados, fila e capacidade por nível (N1/N2) e notificação ao analista.
-- SSO corporativo (OIDC), Postgres, Redis Pub/Sub e deploy com várias instâncias.
-- Testes E2E com Playwright nos fluxos principais.
-- Resumo automático de conversas longas para manter o contexto além da janela.
 
 ---
 
